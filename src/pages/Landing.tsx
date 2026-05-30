@@ -3,6 +3,14 @@ import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { Badge } from "../components/ui";
 import { Reveal, CountUp, Marquee, AiImage, SpeedLines } from "../components/motion";
+import {
+  BrowserFrame,
+  ShotGrid,
+  ShotStint,
+  ShotFrontline,
+  ShotTower,
+  ShotBudget,
+} from "../components/showcase";
 
 const modules = [
   {
@@ -239,6 +247,72 @@ export default function Landing() {
         </Marquee>
       </section>
 
+      {/* ─── SEE IT IN ACTION ─────────────────────────────────── */}
+      <section className="container-page py-20">
+        <Reveal className="mx-auto mb-6 max-w-2xl text-center">
+          <p className="eyebrow">See it in action</p>
+          <h2 className="mt-2 font-display text-3xl font-extrabold tracking-tightest sm:text-4xl">
+            The whole season, on one screen.
+          </h2>
+          <p className="mt-3 text-white/60">
+            Real tools, not mockups. Here's what your weekends look like inside inmotu.
+          </p>
+        </Reveal>
+
+        <FeatureRow
+          eyebrow="The Grid"
+          title="Find where your people race next."
+          body="Every grassroots event near you in one feed — filtered to your disciplines and class, with a nudge before registration closes so you never miss the weekend that matters."
+          cta={["Browse The Grid", "/grid"]}
+          shot={
+            <BrowserFrame url="/grid" tilt>
+              <ShotGrid />
+            </BrowserFrame>
+          }
+        />
+
+        <FeatureRow
+          reverse
+          eyebrow="The Garage"
+          title="Crew like the pros do."
+          body="Plan an entire enduro in seconds — stint counts, pit stops, fuel windows, and driver rotation update live as you type. Setups, parts, and sponsors live here too."
+          cta={["See the plans", "/pricing"]}
+          shot={
+            <BrowserFrame url="/app" tilt>
+              <ShotStint />
+            </BrowserFrame>
+          }
+        />
+
+        <FeatureRow
+          eyebrow="The Frontline"
+          title="Stand with your track."
+          body="Track every Right to Race bill, watch it move through the statehouse, and reach your representative in a single tap. Free forever — because no track should fight alone."
+          cta={["Open The Frontline", "/frontline"]}
+          shot={
+            <BrowserFrame url="/frontline" tilt>
+              <ShotFrontline />
+            </BrowserFrame>
+          }
+        />
+
+        {/* Collage: operator + family */}
+        <div className="mt-12 grid gap-6 sm:grid-cols-2">
+          <Reveal>
+            <p className="eyebrow mb-3">The Tower · for operators</p>
+            <BrowserFrame url="/app" tilt>
+              <ShotTower />
+            </BrowserFrame>
+          </Reveal>
+          <Reveal delay={120}>
+            <p className="eyebrow mb-3">The Pit Board · for families</p>
+            <BrowserFrame url="/app" tilt>
+              <ShotBudget />
+            </BrowserFrame>
+          </Reveal>
+        </div>
+      </section>
+
       {/* ─── ADVOCACY ─────────────────────────────────────────── */}
       <section className="container-page py-24">
         <Reveal>
@@ -307,6 +381,41 @@ export default function Landing() {
           </div>
         </Reveal>
       </section>
+    </div>
+  );
+}
+
+function FeatureRow({
+  eyebrow,
+  title,
+  body,
+  cta,
+  shot,
+  reverse = false,
+}: {
+  eyebrow: string;
+  title: string;
+  body: string;
+  cta?: [string, string];
+  shot: React.ReactNode;
+  reverse?: boolean;
+}) {
+  return (
+    <div className="grid items-center gap-10 py-8 lg:grid-cols-2 lg:gap-16">
+      <Reveal className={reverse ? "lg:order-2" : ""}>
+        <p className="eyebrow">{eyebrow}</p>
+        <h3 className="mt-2 font-display text-2xl font-extrabold tracking-tightest sm:text-3xl">{title}</h3>
+        <p className="mt-3 max-w-md text-white/60">{body}</p>
+        {cta && (
+          <Link to={cta[1]} className="btn-ghost mt-5">
+            {cta[0]} →
+          </Link>
+        )}
+      </Reveal>
+      <Reveal delay={120} y={28} className={`relative ${reverse ? "lg:order-1" : ""}`}>
+        <div className="pointer-events-none absolute -inset-6 -z-10 rounded-[2rem] bg-ignition/10 blur-3xl" />
+        {shot}
+      </Reveal>
     </div>
   );
 }

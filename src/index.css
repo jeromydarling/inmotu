@@ -63,6 +63,16 @@
   }
 }
 
+/* keyframes referenced via inline style in showcase mockups */
+@keyframes bar-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
 /* thin scrollbars */
 * {
   scrollbar-width: thin;
