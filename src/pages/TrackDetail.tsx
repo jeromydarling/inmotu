@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import type { Track } from "@shared/types";
 import { Badge, Spinner } from "../components/ui";
+import { ShareButton } from "../components/ShareButton";
 import { fmtDate, titleCase } from "../lib/format";
 
 export default function TrackDetail() {
@@ -118,6 +119,14 @@ export default function TrackDetail() {
                 Visit website ↗
               </a>
             )}
+            <div className="mt-3">
+              <ShareButton
+                title={t.name}
+                text={t.status === "endangered" ? `${t.name} is under threat — help protect it on inmotu` : `${t.name} on inmotu`}
+                className="btn-ghost w-full"
+                label={t.status === "endangered" ? "Share & rally support" : "Share this track"}
+              />
+            </div>
           </div>
         </aside>
       </div>

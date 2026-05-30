@@ -13,6 +13,8 @@ import LadderPanel from "./panels/LadderPanel";
 import PhotosPanel from "./panels/PhotosPanel";
 import MaintenancePanel from "./panels/MaintenancePanel";
 import SponsorsPanel from "./panels/SponsorsPanel";
+import StudioPanel from "./panels/StudioPanel";
+import TeamPagePanel from "./panels/TeamPagePanel";
 
 type Tab =
   | "calendar"
@@ -23,6 +25,8 @@ type Tab =
   | "maintenance"
   | "garage"
   | "sponsors"
+  | "studio"
+  | "microsite"
   | "tower";
 
 // label, capability key (null = always available), upgrade plan + blurb.
@@ -41,6 +45,8 @@ const TABS: {
   { id: "maintenance", label: "Maintenance", cap: "maintenance", plan: "family", blurb: "Service history per bike so you stay ahead of failures." },
   { id: "garage", label: "Garage", cap: "garage", plan: "pro", blurb: "Setup database and endurance stint planner for serious teams." },
   { id: "sponsors", label: "Sponsors", cap: "sponsors", plan: "pro", blurb: "Manage your sponsorship portfolio, deliverables, and renewals." },
+  { id: "studio", label: "AI Studio", cap: "sponsors", plan: "pro", blurb: "Generate social posts, event promos, and sponsor thank-yous from your own season — in seconds." },
+  { id: "microsite", label: "Microsite", cap: "sponsors", plan: "pro", blurb: "A shareable, SEO-friendly public page for your team — built with AI." },
   { id: "tower", label: "Tower", cap: "tower", plan: "tower", blurb: "Run your track: registration, series points, comms, and economic-impact reports." },
 ];
 
@@ -95,6 +101,8 @@ export default function Dashboard() {
           {tab === "maintenance" && <MaintenancePanel />}
           {tab === "garage" && <GaragePanel />}
           {tab === "sponsors" && <SponsorsPanel />}
+          {tab === "studio" && <StudioPanel />}
+          {tab === "microsite" && <TeamPagePanel />}
           {tab === "tower" && <TowerPanel />}
         </>
       )}

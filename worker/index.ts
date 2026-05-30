@@ -21,7 +21,10 @@ import sponsors from "./routes/sponsors";
 import rules from "./routes/rules";
 import demo from "./routes/demo";
 import adminRoutes from "./routes/admin";
+import studio from "./routes/studio";
+import teampages from "./routes/teampages";
 import { ingestFromFeeds } from "./ingest";
+import { renderWithMeta } from "./lib/seo";
 
 const app = new Hono<{ Bindings: Env; Variables: Vars }>();
 
@@ -50,6 +53,8 @@ api.route("/sponsors", sponsors);
 api.route("/rules", rules);
 api.route("/demo", demo);
 api.route("/admin", adminRoutes);
+api.route("/studio", studio);
+api.route("/teampages", teampages);
 
 api.notFound((c) => c.json({ error: "Not found" }, 404));
 api.onError((err, c) => {
@@ -58,6 +63,91 @@ api.onError((err, c) => {
 });
 
 app.route("/api", api);
+
+// ── SEO / social: server-inject meta + JSON-LD for shareable public pages ──
+const origin = (c: { env: Env; req: { url: string } }) =>
+  c.env.APP_URL || new URL(c.req.url).origin;
+
+// Team / family microsite
+app.get("/t/:slug", async (c) => {
+  const page = await c.env.DB.prepare(
+    "SELECT name, tagline, bio, hometown, hero_slug FROM team_pages WHERE slug = ? AND published = 1",
+  )
+    .bind(c.req.param("slug"))
+    .first<Record<string, any>>();
+  if (!page) return c.env.ASSETS.fetch(c.req.raw);
+  const o = origin(c);
+  return renderWithMeta(c.env, c.req.raw, {
+    title: `${page.name} — inmotu`,
+    description: page.tagline || page.bio || `${page.name} on inmotu.`,
+    url: `${o}/t/${c.req.param("slug")}`,
+    image: `${o}/api/img/${page.hero_slug || "paddock"}`,
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "SportsTeam",
+      name: page.name,
+      description: page.bio || page.tagline || undefined,
+      sport: "Motorsport",
+      ...(page.hometown ? { location: { "@type": "Place", name: page.hometown } } : {}),
+    },
+  });
+});
+
+// Track profile
+app.get("/tracks/:slug", async (c) => {
+  const t = await c.env.DB.prepare(
+    "SELECT name, city, state, discipline, status FROM tracks WHERE slug = ?",
+  )
+    .bind(c.req.param("slug"))
+    .first<Record<string, any>>();
+  if (!t) return c.env.ASSETS.fetch(c.req.raw);
+  const o = origin(c);
+  const loc = [t.city, t.state].filter(Boolean).join(", ");
+  return renderWithMeta(c.env, c.req.raw, {
+    title: `${t.name}${loc ? ` — ${loc}` : ""} | inmotu`,
+    description: `${t.name} on inmotu — events, info${
+      t.status === "endangered" ? ", and how to help protect this track." : "."
+    }`,
+    url: `${o}/tracks/${c.req.param("slug")}`,
+    image: `${o}/api/img/${t.discipline === "motocross" ? "mx" : "car"}`,
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "SportsActivityLocation",
+      name: t.name,
+      ...(loc ? { address: { "@type": "PostalAddress", addressLocality: t.city, addressRegion: t.state } } : {}),
+    },
+  });
+});
+
+// Event detail
+app.get("/events/:slug", async (c) => {
+  const e = await c.env.DB.prepare(
+    `SELECT e.title, e.starts_at, e.discipline, t.name AS track_name, t.city, t.state
+     FROM events e LEFT JOIN tracks t ON t.id = e.track_id WHERE e.slug = ?`,
+  )
+    .bind(c.req.param("slug"))
+    .first<Record<string, any>>();
+  if (!e) return c.env.ASSETS.fetch(c.req.raw);
+  const o = origin(c);
+  const when = e.starts_at ? new Date(e.starts_at * 1000).toISOString() : undefined;
+  return renderWithMeta(c.env, c.req.raw, {
+    title: `${e.title} | inmotu`,
+    description: `${e.title}${e.track_name ? ` at ${e.track_name}` : ""}${
+      e.city ? `, ${e.city}, ${e.state}` : ""
+    } — find it on inmotu.`,
+    url: `${o}/events/${c.req.param("slug")}`,
+    image: `${o}/api/img/disc-${e.discipline || "motocross"}`,
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "SportsEvent",
+      name: e.title,
+      ...(when ? { startDate: when } : {}),
+      ...(e.track_name
+        ? { location: { "@type": "Place", name: e.track_name, address: [e.city, e.state].filter(Boolean).join(", ") } }
+        : {}),
+    },
+  });
+});
 
 // Everything else is served by the static-asset (SPA) handler. With
 // not_found_handling=single-page-application, unknown paths return index.html.

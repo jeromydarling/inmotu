@@ -198,6 +198,29 @@ export const api = {
   startDemo: (body: Record<string, unknown>) =>
     req<{ user: PublicUser }>("/demo", { method: "POST", body: JSON.stringify(body) }),
 
+  // AI marketing studio
+  studioGenerate: (body: Record<string, unknown>) =>
+    req<{ body: string }>("/studio/generate", { method: "POST", body: JSON.stringify(body) }),
+  studioAssets: () =>
+    req<{ assets: { id: string; kind: string; title: string | null; body: string; created_at: number }[] }>(
+      "/studio/assets",
+    ),
+  studioSave: (body: Record<string, unknown>) =>
+    req<{ ok: true; id: string }>("/studio/assets", { method: "POST", body: JSON.stringify(body) }),
+  studioDelete: (id: string) => req<{ ok: true }>(`/studio/assets/${id}`, { method: "DELETE" }),
+
+  // team microsite
+  myTeamPage: () => req<{ page: any | null }>("/teampages/mine"),
+  saveTeamPage: (body: Record<string, unknown>) =>
+    req<{ page: any }>("/teampages/mine", { method: "POST", body: JSON.stringify(body) }),
+  aiBio: (name: string, facts: string) =>
+    req<{ tagline: string; bio: string }>("/teampages/mine/ai-bio", {
+      method: "POST",
+      body: JSON.stringify({ name, facts }),
+    }),
+  publicTeamPage: (slug: string) =>
+    req<{ page: any; riders: any[] }>(`/teampages/public/${slug}`),
+
   // meta + billing
   capabilities: () =>
     req<{

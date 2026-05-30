@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { Badge, Spinner } from "../components/ui";
+import { ShareButton } from "../components/ShareButton";
 import { fmtDate, fmtMoney, daysUntil, titleCase } from "../lib/format";
 import { useAuth } from "../state/auth";
 
@@ -130,6 +131,9 @@ export default function EventDetail() {
             <button onClick={downloadIcs} className="btn-ghost mt-3 w-full">
               Add to device calendar (.ics)
             </button>
+            <div className="mt-3">
+              <ShareButton title={e.title} text={`Racing at ${e.track_name ?? "the track"} — see it on inmotu`} className="btn-ghost w-full" label="Share this event" />
+            </div>
             {e.external_url && (
               <a
                 href={e.external_url}
