@@ -115,8 +115,8 @@ export default function Landing() {
               <Link to="/register" className="btn-primary px-6 py-3 text-base">
                 Find your people →
               </Link>
-              <Link to="/grid" className="btn-ghost px-6 py-3 text-base backdrop-blur">
-                Browse The Grid
+              <Link to="/demo" className="btn-ghost px-6 py-3 text-base backdrop-blur">
+                ▶ Try the live demo
               </Link>
             </div>
             <p className="mt-4 text-xs text-white/45">

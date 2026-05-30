@@ -14,6 +14,14 @@ import img from "./routes/img";
 import ladder from "./routes/ladder";
 import photos from "./routes/photos";
 import yearbook from "./routes/yearbook";
+import maintenance from "./routes/maintenance";
+import comms from "./routes/comms";
+import series from "./routes/series";
+import sponsors from "./routes/sponsors";
+import rules from "./routes/rules";
+import demo from "./routes/demo";
+import adminRoutes from "./routes/admin";
+import { ingestFromFeeds } from "./ingest";
 
 const app = new Hono<{ Bindings: Env; Variables: Vars }>();
 
@@ -35,6 +43,13 @@ api.route("/img", img);
 api.route("/ladder", ladder);
 api.route("/photos", photos);
 api.route("/yearbook", yearbook);
+api.route("/maintenance", maintenance);
+api.route("/comms", comms);
+api.route("/series", series);
+api.route("/sponsors", sponsors);
+api.route("/rules", rules);
+api.route("/demo", demo);
+api.route("/admin", adminRoutes);
 
 api.notFound((c) => c.json({ error: "Not found" }, 404));
 api.onError((err, c) => {
@@ -48,4 +63,12 @@ app.route("/api", api);
 // not_found_handling=single-page-application, unknown paths return index.html.
 app.all("*", (c) => c.env.ASSETS.fetch(c.req.raw));
 
-export default app;
+export default {
+  fetch: app.fetch,
+  // Cron Trigger — pull configured event feeds into The Grid daily.
+  async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext) {
+    ctx.waitUntil(
+      ingestFromFeeds(env).then((r) => console.log("ingest run", JSON.stringify(r))),
+    );
+  },
+};

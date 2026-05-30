@@ -20,6 +20,9 @@
   "observability": {
     "enabled": true
   },
+  "triggers": {
+    "crons": ["0 8 * * *"]
+  },
   "d1_databases": [
     {
       "binding": "DB",
@@ -53,6 +56,7 @@
     "STRIPE_PRICE_TOWER": "price_1TctKGRtg7lL4xBX8dd2ZBHp",
     "STRIPE_PRICE_YEARBOOK": "price_1Tcu84Rtg7lL4xBXWvGYDpTY",
     "LULU_ENV": "sandbox",
-    "MAPBOX_TOKEN": ""
+    "MAPBOX_TOKEN": "",
+    "INGEST_FEEDS": ""
   }
 }

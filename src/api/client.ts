@@ -128,6 +128,53 @@ export const api = {
   yearbookCheckout: (id: string) =>
     req<{ url: string }>(`/yearbook/${id}/checkout`, { method: "POST" }),
 
+  // maintenance
+  maintenance: (params: Record<string, string> = {}) =>
+    req<{ logs: any[] }>(`/maintenance?${new URLSearchParams(params)}`),
+  addMaintenance: (body: Record<string, unknown>) =>
+    req<{ ok: true; id: string }>("/maintenance", { method: "POST", body: JSON.stringify(body) }),
+  deleteMaintenance: (id: string) =>
+    req<{ ok: true }>(`/maintenance/${id}`, { method: "DELETE" }),
+
+  // comms
+  myUpdates: () => req<{ updates: any[] }>("/comms/mine"),
+  sentAnnouncements: (params: Record<string, string> = {}) =>
+    req<{ announcements: any[] }>(`/comms/sent?${new URLSearchParams(params)}`),
+  announce: (eventId: string, body: Record<string, unknown>) =>
+    req<{ ok: true; recipients: number }>(`/comms/events/${eventId}/announce`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  // series / standings
+  seriesList: () => req<{ series: any[] }>("/series"),
+  mySeries: () => req<{ series: any[] }>("/series/mine/list"),
+  createSeries: (body: Record<string, unknown>) =>
+    req<{ series: any }>("/series", { method: "POST", body: JSON.stringify(body) }),
+  addRound: (seriesId: string, eventId: string) =>
+    req<{ ok: true }>(`/series/${seriesId}/rounds`, { method: "POST", body: JSON.stringify({ event_id: eventId }) }),
+  postResults: (eventId: string, results: any[]) =>
+    req<{ ok: true; count: number }>(`/series/results/${eventId}`, { method: "POST", body: JSON.stringify({ results }) }),
+  standings: (slug: string) =>
+    req<{ series: any; standings: any[] }>(`/series/${slug}/standings`),
+
+  // sponsors
+  sponsors: () => req<{ sponsors: any[] }>("/sponsors"),
+  addSponsor: (body: Record<string, unknown>) =>
+    req<{ ok: true; id: string }>("/sponsors", { method: "POST", body: JSON.stringify(body) }),
+  updateSponsor: (id: string, body: Record<string, unknown>) =>
+    req<{ ok: true }>(`/sponsors/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  deleteSponsor: (id: string) =>
+    req<{ ok: true }>(`/sponsors/${id}`, { method: "DELETE" }),
+
+  // rules
+  rules: (params: Record<string, string> = {}) =>
+    req<{ rules: any[] }>(`/rules?${new URLSearchParams(params)}`),
+
+  // demo
+  startDemo: (body: Record<string, unknown>) =>
+    req<{ user: any }>("/demo", { method: "POST", body: JSON.stringify(body) }),
+
   // config
   config: () => req<{ mapbox_token: string | null; app_url: string }>("/meta/config"),
 

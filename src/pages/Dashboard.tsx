@@ -9,8 +9,19 @@ import GaragePanel from "./panels/GaragePanel";
 import TowerPanel from "./panels/TowerPanel";
 import LadderPanel from "./panels/LadderPanel";
 import PhotosPanel from "./panels/PhotosPanel";
+import MaintenancePanel from "./panels/MaintenancePanel";
+import SponsorsPanel from "./panels/SponsorsPanel";
 
-type Tab = "calendar" | "ladder" | "riders" | "photos" | "budget" | "garage" | "tower";
+type Tab =
+  | "calendar"
+  | "ladder"
+  | "riders"
+  | "photos"
+  | "budget"
+  | "maintenance"
+  | "garage"
+  | "sponsors"
+  | "tower";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -36,7 +47,9 @@ export default function Dashboard() {
           ["riders", "Riders"],
           ["photos", "Photos"],
           ["budget", "Budget"],
+          ["maintenance", "Maintenance"],
           ["garage", "Garage"],
+          ["sponsors", "Sponsors"],
           ["tower", "Tower"],
         ] as [Tab, string][]).map(([t, label]) => (
           <button
@@ -56,7 +69,9 @@ export default function Dashboard() {
       {tab === "riders" && <RidersTab />}
       {tab === "photos" && <PhotosPanel />}
       {tab === "budget" && <BudgetTab />}
+      {tab === "maintenance" && <MaintenancePanel />}
       {tab === "garage" && <GaragePanel />}
+      {tab === "sponsors" && <SponsorsPanel />}
       {tab === "tower" && <TowerPanel />}
     </div>
   );
@@ -64,10 +79,12 @@ export default function Dashboard() {
 
 function CalendarTab() {
   const [events, setEvents] = useState<EventItem[]>([]);
+  const [updates, setUpdates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     api.savedEvents().then((r) => setEvents(r.events)).catch(() => {}).finally(() => setLoading(false));
+    api.myUpdates().then((r) => setUpdates(r.updates)).catch(() => {});
   }, []);
 
   async function unsave(e: EventItem) {
@@ -76,18 +93,40 @@ function CalendarTab() {
   }
 
   if (loading) return <Spinner className="mx-auto h-8 w-8" />;
-  if (events.length === 0)
-    return (
-      <EmptyState
-        title="Your calendar is empty"
-        hint="Save events from The Grid and they'll show up here with deadline alerts."
-      />
-    );
   return (
-    <div className="grid gap-3 lg:grid-cols-2">
-      {events.map((e) => (
-        <EventCard key={e.id} e={e} onSave={unsave} />
-      ))}
+    <div className="space-y-6">
+      {updates.length > 0 && (
+        <div>
+          <h2 className="mb-2 flex items-center gap-2 font-display text-sm font-bold uppercase tracking-wider text-white/40">
+            <span className="h-2 w-2 animate-pulse-live rounded-full bg-ignition" /> Updates from your events
+          </h2>
+          <div className="space-y-2">
+            {updates.map((u) => (
+              <div key={u.id} className={`panel p-4 ${u.urgent ? "border-flag-red/30" : ""}`}>
+                <div className="flex items-center gap-2">
+                  {u.urgent ? <Badge tone="red">Urgent</Badge> : <Badge tone="live">Update</Badge>}
+                  <span className="text-xs text-white/40">{u.event_title}</span>
+                </div>
+                <div className="mt-1.5 font-semibold text-white">{u.title}</div>
+                <p className="text-sm text-white/60">{u.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {events.length === 0 ? (
+        <EmptyState
+          title="Your calendar is empty"
+          hint="Save events from The Grid and they'll show up here with deadline alerts."
+        />
+      ) : (
+        <div className="grid gap-3 lg:grid-cols-2">
+          {events.map((e) => (
+            <EventCard key={e.id} e={e} onSave={unsave} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

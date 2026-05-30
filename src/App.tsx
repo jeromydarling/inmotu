@@ -14,6 +14,9 @@ import Pricing from "./pages/Pricing";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
+import Rules from "./pages/Rules";
+import Standings from "./pages/Standings";
+import Demo from "./pages/Demo";
 
 function Shell() {
   const { pathname } = useLocation();
@@ -55,7 +58,10 @@ export default function App() {
         <Route path="/tracks" element={<Tracks />} />
         <Route path="/tracks/:slug" element={<TrackDetail />} />
         <Route path="/frontline" element={<Frontline />} />
+        <Route path="/standings" element={<Standings />} />
+        <Route path="/rules" element={<Rules />} />
         <Route path="/pricing" element={<Pricing />} />
+        <Route path="/demo" element={<Demo />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route element={<Protected />}>

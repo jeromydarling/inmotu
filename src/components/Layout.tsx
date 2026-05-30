@@ -6,7 +6,9 @@ import { useAuth } from "../state/auth";
 const navItems = [
   { to: "/grid", label: "The Grid" },
   { to: "/tracks", label: "Tracks" },
+  { to: "/standings", label: "Standings" },
   { to: "/frontline", label: "Frontline" },
+  { to: "/rules", label: "Rules" },
   { to: "/pricing", label: "Pricing" },
 ];
 
@@ -57,6 +59,9 @@ export function Header() {
             <>
               <Link to="/login" className="btn-ghost btn-sm">
                 Sign in
+              </Link>
+              <Link to="/demo" className="btn-ghost btn-sm">
+                Try demo
               </Link>
               <Link to="/register" className="btn-primary btn-sm">
                 Start free

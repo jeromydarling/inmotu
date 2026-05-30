@@ -12,6 +12,7 @@ export interface Env {
   MAPBOX_TOKEN?: string; // publishable pk.* token for map tiles
   STRIPE_PRICE_YEARBOOK?: string;
   LULU_ENV?: string; // 'sandbox' | 'production'
+  INGEST_FEEDS?: string; // comma-separated JSON feed URLs for event ingestion
   // Secrets (set via `wrangler secret put`):
   SESSION_SECRET?: string;
   STRIPE_SECRET_KEY?: string;
