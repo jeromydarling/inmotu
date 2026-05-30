@@ -8,17 +8,17 @@ import type { Env, Vars } from "../types";
 
 const PROMPTS: Record<string, string> = {
   hero:
-    "Cinematic wide photograph of a youth motocross rider launching off a big dirt tabletop jump at golden-hour dusk, dramatic backlight, rooster tail of dust and dirt spray, dirt bike fully airborne, motion blur, shallow depth of field, warm orange and amber tones against a deep dark sky, professional sports photography, no text, no logos, ultra detailed",
+    "Vivid high-contrast action photograph of a youth motocross rider launching a big dirt jump, dirt bike fully airborne and tipped sideways in a whip, bright golden-hour sunlight, vibrant glowing orange dust spray catching the light, dramatic but bright and clearly lit sky, sharp focus on the rider, energetic and triumphant, professional sports photography, vibrant colors, no text, no logos, ultra detailed",
   paddock:
-    "Warm candid documentary photograph of a grassroots motocross paddock at dusk, families and crew gathered around pickup trucks and trailers, a grandfather and a young kid working on a dirt bike together, folding chairs and string lights, neighbors helping neighbors, golden evening light, sense of belonging and community, cinematic, no text, no logos, ultra detailed",
+    "Warm, bright candid documentary photograph of a grassroots motocross paddock in early evening, families and crew gathered around pickup trucks and trailers, a grandfather and a young kid working on a dirt bike together, string lights glowing, neighbors helping neighbors, warm inviting golden light, clearly lit and vibrant, sense of belonging and community, cinematic, no text, no logos, ultra detailed",
   mx:
-    "Dynamic action photograph of a motocross rider hard on the throttle through a muddy bermed corner, dirt roost spraying, knobby tires digging in, low angle, motion blur, dramatic dusk lighting, warm tones, professional motorsport photography, no text, no logos, ultra detailed",
+    "Bright dynamic action photograph of a motocross rider hard on the throttle through a bermed corner, vibrant orange dirt roost spraying in sunlight, knobby tires digging in, low angle, motion blur, warm sunny golden-hour light, vivid colors, professional motorsport photography, no text, no logos, ultra detailed",
   car:
-    "Action photograph of an amateur club road-racing car cornering hard on a race track at dusk, slight motion blur, heat haze, paddock garages blurred in background, cinematic warm and dark color grade, professional motorsport photography, no text, no logos, ultra detailed",
+    "Bright action photograph of an amateur club road-racing car cornering hard on a race track in warm evening light, slight motion blur, vivid colors, paddock garages blurred in background, clearly lit cinematic color grade, professional motorsport photography, no text, no logos, ultra detailed",
   frontline:
-    "Atmospheric photograph of a beloved small-town short-track oval racetrack at dusk, empty grandstands and floodlights glowing warm, americana, a place worth protecting, cinematic, moody dark sky with warm amber light, no people, no text, no logos, ultra detailed",
+    "Atmospheric but clearly lit photograph of a beloved small-town short-track oval racetrack at dusk, grandstands and floodlights glowing warm and bright, americana, a place worth protecting, warm amber glow against a colorful sunset sky, vibrant, no people, no text, no logos, ultra detailed",
   start:
-    "Tense photograph of a motocross start gate moments before the drop, row of riders gripping handlebars, front wheels lined up, dust in the air, dramatic low golden-hour light, anticipation and energy, shallow depth of field, professional sports photography, no text, no logos, ultra detailed",
+    "Bright tense photograph of a motocross start gate moments before the drop, row of riders gripping handlebars, front wheels lined up, dust glowing in warm sunlight, dramatic but well-lit golden-hour light, anticipation and energy, vivid colors, professional sports photography, no text, no logos, ultra detailed",
 
   // Per-discipline thumbnails for The Grid event cards
   "disc-motocross":
@@ -64,7 +64,9 @@ img.get("/:slug", async (c) => {
   const prompt = PROMPTS[slug];
   if (!prompt) return c.notFound();
 
-  const key = `gen/${slug}.jpg`;
+  // Bump VERSION to regenerate every image with updated prompts (R2 key changes).
+  const VERSION = "v2";
+  const key = `gen/${VERSION}/${slug}.jpg`;
 
   // Serve from cache if we've already generated it.
   const cached = await c.env.MEDIA.get(key);

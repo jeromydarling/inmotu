@@ -68,18 +68,21 @@ export default function Landing() {
     <div>
       {/* ─── HERO ─────────────────────────────────────────────── */}
       <section className="relative isolate overflow-hidden">
-        <AiImage
-          slug="hero"
-          kenBurns
-          overlay={false}
-          className="absolute inset-0 -z-10 h-full w-full"
-          imgClassName="opacity-50"
-        />
-        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-carbon-950 via-carbon-950/85 to-carbon-950/30" />
-        <div className="absolute inset-0 -z-10 bg-gradient-to-t from-carbon-950 via-transparent to-carbon-950/60" />
-        <SpeedLines className="-z-10 opacity-70" />
+        <div className="relative flex min-h-[82vh] items-center">
+          <AiImage
+            slug="hero"
+            kenBurns
+            overlay={false}
+            className="absolute inset-0 h-full w-full"
+            imgClassName="opacity-90"
+          />
+          {/* legibility scrims — let the rider show, keep text crisp */}
+          <div className="absolute inset-0 bg-gradient-to-t from-carbon-950 via-carbon-950/55 to-carbon-950/15" />
+          <div className="absolute inset-0 hidden bg-gradient-to-r from-carbon-950/90 via-carbon-950/40 to-transparent lg:block" />
+          <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-carbon-950 to-transparent" />
+          <SpeedLines className="opacity-70" />
 
-        <div className="container-page relative grid gap-12 py-24 lg:grid-cols-[1.15fr_0.85fr] lg:py-32">
+          <div className="container-page relative grid w-full gap-12 py-16 sm:py-20 lg:grid-cols-[1.15fr_0.85fr]">
           <div className="animate-fade-up">
             <div className="mb-5 flex items-center gap-3">
               <Badge tone="live">
@@ -115,6 +118,7 @@ export default function Landing() {
 
           <div className="hidden animate-fade-up [animation-delay:140ms] lg:block">
             <LadderPreview />
+          </div>
           </div>
         </div>
 
