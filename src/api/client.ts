@@ -199,6 +199,13 @@ export const api = {
     req<{ user: PublicUser }>("/demo", { method: "POST", body: JSON.stringify(body) }),
 
   // meta + billing
+  capabilities: () =>
+    req<{
+      plan: string;
+      role: string;
+      can: Record<string, boolean>;
+      riderLimit: number | null;
+    }>("/meta/capabilities"),
   config: () => req<{ mapbox_token: string | null; app_url: string }>("/meta/config"),
   reference: () =>
     req<{ disciplines: Discipline[]; bodies: { slug: string; label: string }[]; regions: string[] }>(

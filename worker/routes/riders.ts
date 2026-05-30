@@ -2,6 +2,8 @@ import { Hono } from "hono";
 import type { Env, Vars } from "../types";
 import { requireAuth } from "../auth/middleware";
 import { now, uid } from "../lib/util";
+import { err } from "../lib/http";
+import { FREE_RIDER_LIMIT, planMeets, requirePlan } from "../lib/entitlements";
 
 // The Pit Board — family & rider management. All routes require auth.
 const riders = new Hono<{ Bindings: Env; Variables: Vars }>();
@@ -19,7 +21,25 @@ riders.get("/", async (c) => {
 riders.post("/", async (c) => {
   const b = await c.req.json().catch(() => ({}));
   if (typeof b.name !== "string" || !b.name.trim())
-    return c.json({ error: "Rider name required" }, 400);
+    return err(c, "validation", "Rider name required");
+
+  // Free plan is limited to a single rider profile; Family+ is unlimited.
+  if (!planMeets(c.var.user!.plan, "family")) {
+    const count = await c.env.DB.prepare("SELECT COUNT(*) AS n FROM riders WHERE user_id = ?")
+      .bind(c.var.user!.id)
+      .first<{ n: number }>();
+    if ((count?.n ?? 0) >= FREE_RIDER_LIMIT) {
+      return c.json(
+        {
+          error: "upgrade_required",
+          message: "The free plan includes 1 rider. Upgrade to Family for unlimited riders.",
+          plan: "family",
+        },
+        402,
+      );
+    }
+  }
+
   const id = uid("rdr_");
   await c.env.DB.prepare(
     `INSERT INTO riders (id, user_id, name, birthdate, discipline, race_class, number, ama_license, skill_level, created_at)
@@ -62,10 +82,10 @@ riders.get("/budget/summary", async (c) => {
   return c.json({ summary: results });
 });
 
-riders.post("/budget", async (c) => {
+riders.post("/budget", requirePlan("budget"), async (c) => {
   const b = await c.req.json().catch(() => ({}));
   if (typeof b.amount_cents !== "number" || typeof b.category !== "string")
-    return c.json({ error: "category and amount_cents required" }, 400);
+    return err(c, "validation", "category and amount_cents required");
   const id = uid("bud_");
   await c.env.DB.prepare(
     `INSERT INTO budget_entries (id, user_id, rider_id, category, amount_cents, spent_at, note)

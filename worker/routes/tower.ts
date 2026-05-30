@@ -4,11 +4,21 @@ import { requireAuth } from "../auth/middleware";
 import { now, uid, slugify } from "../lib/util";
 import { ownsEvent } from "../db";
 import { err } from "../lib/http";
+import { planMeets } from "../lib/entitlements";
 
 // The Tower — operator tools. An operator owns the events they create and
 // can see registrations + a one-click economic-impact summary.
 const tower = new Hono<{ Bindings: Env; Variables: Vars }>();
 tower.use("*", requireAuth);
+// Tower is for operators: either the Tower plan or an operator/admin role.
+tower.use("*", async (c, next) => {
+  const u = c.var.user!;
+  if (planMeets(u.plan, "tower") || u.role === "operator" || u.role === "admin") return next();
+  return c.json(
+    { error: "upgrade_required", message: "The Tower is for track operators.", plan: "tower" },
+    402,
+  );
+});
 
 // Events owned by this operator
 tower.get("/events", async (c) => {

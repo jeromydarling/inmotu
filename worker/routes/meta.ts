@@ -1,8 +1,27 @@
 import { Hono } from "hono";
 import type { Env, Vars } from "../types";
+import { FEATURE_MIN, FREE_RIDER_LIMIT, planMeets } from "../lib/entitlements";
 
 // Reference data + lightweight platform stats for the landing page.
 const meta = new Hono<{ Bindings: Env; Variables: Vars }>();
+
+// Per-user capabilities so the SPA can gate UI gracefully (show upgrade
+// prompts instead of letting the user hit a 402). Mirrors lib/entitlements.
+meta.get("/capabilities", (c) => {
+  const plan = c.var.user?.plan ?? "free";
+  const role = c.var.user?.role ?? "member";
+  const can = Object.fromEntries(
+    Object.entries(FEATURE_MIN).map(([f, min]) => [f, planMeets(plan, min)]),
+  );
+  // Tower is operator-gated (plan OR role).
+  can.tower = planMeets(plan, "tower") || role === "operator" || role === "admin";
+  return c.json({
+    plan,
+    role,
+    can,
+    riderLimit: planMeets(plan, "family") ? null : FREE_RIDER_LIMIT,
+  });
+});
 
 meta.get("/reference", async (c) => {
   const [disciplines, bodies, regions] = await Promise.all([

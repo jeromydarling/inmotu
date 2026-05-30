@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { Env, Vars } from "../types";
 import { requireAuth } from "../auth/middleware";
+import { requirePlan } from "../lib/entitlements";
 import { now, uid } from "../lib/util";
 
 // Family photo timeline — stored in R2, metadata in D1.
@@ -26,6 +27,7 @@ photos.get("/:id/raw", requireAuth, async (c) => {
 });
 
 photos.use("*", requireAuth);
+photos.use("*", requirePlan("photos"));
 
 // List the family's photos (optionally filtered by rider/event).
 photos.get("/", async (c) => {

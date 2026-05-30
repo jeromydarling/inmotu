@@ -1,11 +1,13 @@
 import { Hono } from "hono";
 import type { Env, Vars } from "../types";
 import { requireAuth } from "../auth/middleware";
+import { requirePlan } from "../lib/entitlements";
 import { now, uid } from "../lib/util";
 
 // Sponsorship management — portfolio, deliverables, renewal tracking.
 const sponsors = new Hono<{ Bindings: Env; Variables: Vars }>();
 sponsors.use("*", requireAuth);
+sponsors.use("*", requirePlan("sponsors"));
 
 sponsors.get("/", async (c) => {
   const { results } = await c.env.DB.prepare(

@@ -16,13 +16,13 @@ const modules = [
   {
     tag: "The Grid",
     title: "Every race. One calendar.",
-    body: "The first unified feed of every grassroots event near you — motocross, autocross, road race, endurance, short track. Filtered to your disciplines and class, with alerts so a missed Monday deadline never ends your season.",
+    body: "The first unified feed of every grassroots event near you — motocross, autocross, road race, endurance, short track. Filtered to your disciplines and class, with registration deadlines front and center so you never miss the Monday cutoff.",
     accent: "ignition",
   },
   {
     tag: "The Pit Board",
     title: "Your whole family, in one place.",
-    body: "Every rider in the family, their schedules, gear checklists, maintenance logs, and the real season budget — organized, shared, and ready before the gate drops.",
+    body: "Every rider in the family, their schedules, maintenance logs, and the real season budget — organized, shared, and ready before the gate drops.",
     accent: "amber",
   },
   {
@@ -34,13 +34,13 @@ const modules = [
   {
     tag: "The Tower",
     title: "Help your home track thrive.",
-    body: "Registration, waivers, payments, points, and one-click economic-impact reports — affordable tools for the family-run tracks that hold this whole thing together.",
+    body: "Online registration, series points and live standings, attendee comms, and one-click economic-impact reports — affordable tools for the family-run tracks that hold this whole thing together.",
     accent: "ignition",
   },
   {
     tag: "The Garage",
     title: "Crew like the pros do.",
-    body: "Setup database by track and conditions, an endurance stint planner with live fuel math, parts tracking, and sponsor portfolios — shared with everyone wearing your colors.",
+    body: "Setup database by track and conditions, an endurance stint planner with live fuel math, and sponsor portfolios — shared with everyone wearing your colors.",
     accent: "amber",
   },
   {
@@ -181,7 +181,7 @@ export default function Landing() {
             <div className="mt-8 space-y-4">
               {[
                 ["A place in the paddock", "Every family gets a profile and a crew from day one. First race or fiftieth, there's room for you here."],
-                ["We show up for each other", "Shared checklists, structured crews, deadline alerts — the help that used to mean knocking on the next trailer over."],
+                ["We show up for each other", "Shared calendars, event updates from your tracks, and crew-ready event details — the help that used to mean knocking on the next trailer over."],
                 ["What we build, we hand down", "From the four-year-old on a PW50 to the grandparent in the pit chair. We're keeping this alive for whoever's next."],
               ].map(([t, b], i) => (
                 <Reveal key={t} delay={i * 90}>

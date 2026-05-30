@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { api } from "../api/client";
+import { api, ApiErr } from "../api/client";
 import { Badge } from "../components/ui";
 import { Reveal } from "../components/motion";
 import { useAuth } from "../state/auth";
+import { useToast } from "../state/toast";
 
 const tiers = [
   {
@@ -13,7 +14,7 @@ const tiers = [
     cadence: "forever",
     tagline: "Your place in the paddock, on us.",
     features: [
-      "Full event calendar & deadline alerts",
+      "Full event calendar & registration deadlines",
       "1 rider profile",
       "Track directory & endangered map",
       "Right to Race advocacy tools",
@@ -29,10 +30,10 @@ const tiers = [
     tagline: "The TeamSnap for racing families.",
     features: [
       "Unlimited rider profiles",
-      "Road to Loretta's ladder tracker",
+      "Road to the Ranch ladder tracker",
       "Budget tracker & maintenance logs",
-      "Gear checklists & photo timeline",
-      "Team / crew communication",
+      "Season photo timeline & yearbook",
+      "Event updates from your tracks",
     ],
     cta: "Upgrade to Family",
     highlight: true,
@@ -45,10 +46,10 @@ const tiers = [
     tagline: "Team ops that rival the pros.",
     features: [
       "Everything in Family",
-      "The Garage: setups + stint planner",
-      "Live cellular pit board",
+      "The Garage: setup database",
+      "Endurance stint planner",
       "Sponsorship portfolio manager",
-      "Driver development log",
+      "Multi-rider team management",
     ],
     cta: "Upgrade to Pro",
     highlight: false,
@@ -60,9 +61,9 @@ const tiers = [
     cadence: "/mo · operators",
     tagline: "Run your track like a business.",
     features: [
-      "Registration + waivers + payments",
-      "Series points management",
-      "Sponsor CRM",
+      "Online event registration",
+      "Series points & live standings",
+      "Sponsor management",
       "Communication center",
       "Economic impact reports",
     ],
@@ -72,9 +73,11 @@ const tiers = [
 ];
 
 export default function Pricing() {
-  const { user } = useAuth();
+  const { user, caps } = useAuth();
   const nav = useNavigate();
+  const toast = useToast();
   const [msg, setMsg] = useState<string | null>(null);
+  const currentPlan = caps?.plan ?? "free";
 
   async function choose(id: string) {
     if (id === "free") {
@@ -88,11 +91,12 @@ export default function Pricing() {
     try {
       const { url } = await api.checkout(id);
       if (url) window.location.href = url;
-    } catch (e: any) {
-      setMsg(
-        e?.data?.message ||
-          "Checkout isn't wired to Stripe yet in this environment — add your Stripe keys to enable live billing.",
-      );
+    } catch (e) {
+      if (e instanceof ApiErr && e.code === "billing_not_configured") {
+        setMsg("Checkout will open once Stripe billing is enabled. Hang tight — we're almost there.");
+      } else {
+        toast.error(e instanceof Error ? e.message : "Couldn't start checkout. Try again.");
+      }
     }
   }
 
@@ -116,18 +120,24 @@ export default function Pricing() {
       )}
 
       <div className="mt-10 grid gap-4 lg:grid-cols-4">
-        {tiers.map((t, i) => (
+        {tiers.map((t, i) => {
+          const isCurrent = user != null && t.id === currentPlan;
+          return (
           <Reveal key={t.id} delay={i * 80} className="h-full">
           <div
             className={`panel relative flex h-full flex-col p-6 transition duration-300 hover:-translate-y-1 ${
-              t.highlight ? "border-ignition/40 shadow-glow" : "hover:border-white/20"
+              isCurrent ? "border-flag-green/40" : t.highlight ? "border-ignition/40 shadow-glow" : "hover:border-white/20"
             }`}
           >
-            {t.highlight && (
+            {isCurrent ? (
+              <div className="absolute -top-3 left-6">
+                <Badge tone="green">Your plan</Badge>
+              </div>
+            ) : t.highlight ? (
               <div className="absolute -top-3 left-6">
                 <Badge tone="live">Most popular</Badge>
               </div>
-            )}
+            ) : null}
             <h3 className="font-display text-xl font-extrabold">{t.name}</h3>
             <p className="mt-1 text-xs text-white/45">{t.tagline}</p>
             <div className="mt-4 flex items-end gap-1">
@@ -144,13 +154,15 @@ export default function Pricing() {
             </ul>
             <button
               onClick={() => choose(t.id)}
-              className={`${t.highlight ? "btn-primary" : "btn-ghost"} mt-6 w-full`}
+              disabled={isCurrent}
+              className={`${t.highlight && !isCurrent ? "btn-primary" : "btn-ghost"} mt-6 w-full`}
             >
-              {t.cta}
+              {isCurrent ? "Current plan" : t.cta}
             </button>
           </div>
           </Reveal>
-        ))}
+          );
+        })}
       </div>
 
       <div className="mx-auto mt-10 max-w-2xl text-center text-sm text-white/40">

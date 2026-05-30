@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { Env, Vars } from "../types";
 import { requireAuth } from "../auth/middleware";
+import { requirePlan } from "../lib/entitlements";
 import { now, uid } from "../lib/util";
 import { ownsRider } from "../db";
 import { err } from "../lib/http";
@@ -23,9 +24,11 @@ ladder.get("/", async (c) => {
   return c.json({ ladders: byLadder });
 });
 
+// Viewing a rider's ladder is open to any signed-in user; recording progress
+// (the active tracker) is a Family feature.
 ladder.use("/rider/*", requireAuth);
-ladder.use("/progress", requireAuth);
-ladder.use("/progress/*", requireAuth);
+ladder.use("/progress", requireAuth, requirePlan("ladder"));
+ladder.use("/progress/*", requireAuth, requirePlan("ladder"));
 
 // A rider's live progress through the ladder for their discipline.
 ladder.get("/rider/:riderId", async (c) => {

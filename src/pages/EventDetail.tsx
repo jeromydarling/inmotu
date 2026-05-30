@@ -141,7 +141,7 @@ export default function EventDetail() {
               </a>
             )}
             <p className="mt-4 text-center text-xs text-white/35">
-              Saving syncs deadline alerts to your dashboard.
+              Saved events show their deadlines on your dashboard.
             </p>
           </div>
           {user && <RegisterBox eventId={e.id} fee={e.entry_fee_cents} />}

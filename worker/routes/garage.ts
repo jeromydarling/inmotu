@@ -1,11 +1,13 @@
 import { Hono } from "hono";
 import type { Env, Vars } from "../types";
 import { requireAuth } from "../auth/middleware";
+import { requirePlan } from "../lib/entitlements";
 import { now, uid } from "../lib/util";
 
 // The Garage — team ops: vehicle setup database + endurance stint planner.
 const garage = new Hono<{ Bindings: Env; Variables: Vars }>();
 garage.use("*", requireAuth);
+garage.use("*", requirePlan("garage"));
 
 // ── Setup database ────────────────────────────────────────────────────
 garage.get("/setups", async (c) => {

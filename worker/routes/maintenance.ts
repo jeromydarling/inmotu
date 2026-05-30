@@ -4,10 +4,12 @@ import { requireAuth } from "../auth/middleware";
 import { now, uid } from "../lib/util";
 import { ownsRider } from "../db";
 import { err } from "../lib/http";
+import { requirePlan } from "../lib/entitlements";
 
 // Maintenance log — service tracker per rider/bike (affordability + reliability).
 const maintenance = new Hono<{ Bindings: Env; Variables: Vars }>();
 maintenance.use("*", requireAuth);
+maintenance.use("*", requirePlan("maintenance"));
 
 maintenance.get("/", async (c) => {
   const { rider_id } = c.req.query();

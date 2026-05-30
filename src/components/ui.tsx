@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
 
 export function Badge({
   children,
@@ -63,6 +64,40 @@ export function Pill({
     >
       {children}
     </button>
+  );
+}
+
+const PLAN_LABEL: Record<string, string> = {
+  family: "Family",
+  pro: "Pro / Team",
+  tower: "The Tower",
+};
+
+/** Shown in place of a gated feature with a clear upgrade CTA. */
+export function UpgradePrompt({
+  plan,
+  feature,
+  blurb,
+}: {
+  plan: "family" | "pro" | "tower";
+  feature: string;
+  blurb?: string;
+}) {
+  return (
+    <div className="panel relative overflow-hidden p-8 text-center sm:p-12">
+      <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-ignition/10 blur-3xl" />
+      <div className="relative">
+        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-ignition/15 text-2xl">
+          🔒
+        </div>
+        <Badge tone="live">{PLAN_LABEL[plan]} plan</Badge>
+        <h3 className="mt-3 font-display text-2xl font-extrabold tracking-tightest">{feature}</h3>
+        {blurb && <p className="mx-auto mt-2 max-w-md text-sm text-white/55">{blurb}</p>}
+        <Link to="/pricing" className="btn-primary mt-6">
+          Upgrade to {PLAN_LABEL[plan]} →
+        </Link>
+      </div>
+    </div>
   );
 }
 

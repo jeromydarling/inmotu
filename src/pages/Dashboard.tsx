@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
-import { api } from "../api/client";
+import { useNavigate } from "react-router-dom";
+import { api, ApiErr } from "../api/client";
 import type { EventItem, Rider } from "@shared/types";
 import { useAuth } from "../state/auth";
+import { useToast } from "../state/toast";
 import { EventCard } from "../components/EventCard";
-import { Badge, EmptyState, Spinner } from "../components/ui";
+import { Badge, EmptyState, Spinner, UpgradePrompt } from "../components/ui";
 import { fmtMoney, titleCase } from "../lib/format";
 import GaragePanel from "./panels/GaragePanel";
 import TowerPanel from "./panels/TowerPanel";
@@ -23,9 +25,32 @@ type Tab =
   | "sponsors"
   | "tower";
 
+// label, capability key (null = always available), upgrade plan + blurb.
+const TABS: {
+  id: Tab;
+  label: string;
+  cap: string | null;
+  plan?: "family" | "pro" | "tower";
+  blurb?: string;
+}[] = [
+  { id: "calendar", label: "Calendar", cap: null },
+  { id: "ladder", label: "Ladder", cap: "ladder", plan: "family", blurb: "Track each rider's road to Nationals — log results and watch their qualifying status update live." },
+  { id: "riders", label: "Riders", cap: null },
+  { id: "photos", label: "Photos", cap: "photos", plan: "family", blurb: "Build a season photo timeline and turn it into a printed yearbook." },
+  { id: "budget", label: "Budget", cap: "budget", plan: "family", blurb: "Know your real season costs by category, year over year." },
+  { id: "maintenance", label: "Maintenance", cap: "maintenance", plan: "family", blurb: "Service history per bike so you stay ahead of failures." },
+  { id: "garage", label: "Garage", cap: "garage", plan: "pro", blurb: "Setup database and endurance stint planner for serious teams." },
+  { id: "sponsors", label: "Sponsors", cap: "sponsors", plan: "pro", blurb: "Manage your sponsorship portfolio, deliverables, and renewals." },
+  { id: "tower", label: "Tower", cap: "tower", plan: "tower", blurb: "Run your track: registration, series points, comms, and economic-impact reports." },
+];
+
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, caps } = useAuth();
   const [tab, setTab] = useState<Tab>("calendar");
+
+  const can = (cap: string | null) => cap === null || caps?.can?.[cap] !== false;
+  const current = TABS.find((t) => t.id === tab)!;
+  const allowed = can(current.cap);
 
   return (
     <div className="container-page py-12">
@@ -41,38 +66,38 @@ export default function Dashboard() {
       </header>
 
       <div className="mb-8 flex gap-1 overflow-x-auto rounded-xl border border-white/[0.06] bg-carbon-900/50 p-1">
-        {([
-          ["calendar", "Calendar"],
-          ["ladder", "Ladder"],
-          ["riders", "Riders"],
-          ["photos", "Photos"],
-          ["budget", "Budget"],
-          ["maintenance", "Maintenance"],
-          ["garage", "Garage"],
-          ["sponsors", "Sponsors"],
-          ["tower", "Tower"],
-        ] as [Tab, string][]).map(([t, label]) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`shrink-0 flex-1 rounded-lg px-4 py-2 text-sm font-semibold transition ${
-              tab === t ? "bg-ignition text-white shadow-glow" : "text-white/55 hover:text-white"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+        {TABS.map((t) => {
+          const locked = !can(t.cap);
+          return (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`shrink-0 flex-1 rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                tab === t.id ? "bg-ignition text-white shadow-glow" : "text-white/55 hover:text-white"
+              }`}
+            >
+              {t.label}
+              {locked && <span className="ml-1 text-white/40">🔒</span>}
+            </button>
+          );
+        })}
       </div>
 
-      {tab === "calendar" && <CalendarTab />}
-      {tab === "ladder" && <LadderPanel />}
-      {tab === "riders" && <RidersTab />}
-      {tab === "photos" && <PhotosPanel />}
-      {tab === "budget" && <BudgetTab />}
-      {tab === "maintenance" && <MaintenancePanel />}
-      {tab === "garage" && <GaragePanel />}
-      {tab === "sponsors" && <SponsorsPanel />}
-      {tab === "tower" && <TowerPanel />}
+      {!allowed ? (
+        <UpgradePrompt plan={current.plan!} feature={`${current.label} is a ${current.plan} feature`} blurb={current.blurb} />
+      ) : (
+        <>
+          {tab === "calendar" && <CalendarTab />}
+          {tab === "ladder" && <LadderPanel />}
+          {tab === "riders" && <RidersTab />}
+          {tab === "photos" && <PhotosPanel />}
+          {tab === "budget" && <BudgetTab />}
+          {tab === "maintenance" && <MaintenancePanel />}
+          {tab === "garage" && <GaragePanel />}
+          {tab === "sponsors" && <SponsorsPanel />}
+          {tab === "tower" && <TowerPanel />}
+        </>
+      )}
     </div>
   );
 }
@@ -118,7 +143,7 @@ function CalendarTab() {
       {events.length === 0 ? (
         <EmptyState
           title="Your calendar is empty"
-          hint="Save events from The Grid and they'll show up here with deadline alerts."
+          hint="Save events from The Grid and they'll show up here with their registration deadlines."
         />
       ) : (
         <div className="grid gap-3 lg:grid-cols-2">
@@ -132,6 +157,8 @@ function CalendarTab() {
 }
 
 function RidersTab() {
+  const nav = useNavigate();
+  const toast = useToast();
   const [riders, setRiders] = useState<Rider[]>([]);
   const [loading, setLoading] = useState(true);
   const [show, setShow] = useState(false);
@@ -145,10 +172,19 @@ function RidersTab() {
   async function add(e: React.FormEvent) {
     e.preventDefault();
     if (!form.name.trim()) return;
-    await api.createRider(form);
-    setForm({ name: "", race_class: "", number: "", discipline: "motocross" });
-    setShow(false);
-    load();
+    try {
+      await api.createRider(form);
+      setForm({ name: "", race_class: "", number: "", discipline: "motocross" });
+      setShow(false);
+      load();
+    } catch (err) {
+      if (err instanceof ApiErr && err.code === "upgrade_required") {
+        toast.error(err.message);
+        nav("/pricing");
+      } else {
+        toast.error("Couldn't add rider. Try again.");
+      }
+    }
   }
 
   async function remove(id: string) {
