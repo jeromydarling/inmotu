@@ -122,8 +122,8 @@ export function Footer() {
             </span>
           </div>
           <p className="mt-3 max-w-xs text-sm text-white/45">
-            The operating system for grassroots motorsports. Built for the family in the pits — and
-            the tracks worth fighting for.
+            A home for the whole racing family. Built for the people in the pits, the tracks they
+            gather at, and everyone they hand it down to.
           </p>
         </div>
         <FooterCol
@@ -154,7 +154,7 @@ export function Footer() {
       </div>
       <div className="border-t border-white/[0.06]">
         <div className="container-page flex flex-col items-center justify-between gap-2 py-5 text-xs text-white/35 sm:flex-row">
-          <span>© {new Date().getFullYear()} inmotu. In motu — always in motion.</span>
+          <span>© {new Date().getFullYear()} inmotu. Nobody races alone.</span>
           <span className="font-mono">inmotu.pro · built on Cloudflare's edge</span>
         </div>
       </div>

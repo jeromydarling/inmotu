@@ -4,6 +4,8 @@ export interface Env {
   DB: D1Database;
   SESSIONS: KVNamespace;
   ASSETS: Fetcher;
+  MEDIA: R2Bucket;
+  AI: Ai;
   APP_ENV: string;
   APP_URL: string;
   // Secrets (set via `wrangler secret put`):

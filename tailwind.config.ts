@@ -70,10 +70,50 @@ export default {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.35" },
         },
+        marquee: {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(-50%)" },
+        },
+        "marquee-rev": {
+          "0%": { transform: "translateX(-50%)" },
+          "100%": { transform: "translateX(0)" },
+        },
+        drift: {
+          "0%": { transform: "translateX(-20%)" },
+          "100%": { transform: "translateX(120%)" },
+        },
+        "ken-burns": {
+          "0%": { transform: "scale(1) translate(0,0)" },
+          "100%": { transform: "scale(1.12) translate(-2%,-2%)" },
+        },
+        float: {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-8px)" },
+        },
+        shimmer: {
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
+        },
+        "spin-slow": {
+          "0%": { transform: "rotate(0deg)" },
+          "100%": { transform: "rotate(360deg)" },
+        },
+        "bar-grow": {
+          "0%": { transform: "scaleX(0)" },
+          "100%": { transform: "scaleX(1)" },
+        },
       },
       animation: {
         "fade-up": "fade-up 0.6s cubic-bezier(0.16,1,0.3,1) both",
         "pulse-live": "pulse-live 1.6s ease-in-out infinite",
+        marquee: "marquee 32s linear infinite",
+        "marquee-slow": "marquee 60s linear infinite",
+        "marquee-rev": "marquee-rev 40s linear infinite",
+        drift: "drift 7s linear infinite",
+        "ken-burns": "ken-burns 18s ease-in-out infinite alternate",
+        float: "float 6s ease-in-out infinite",
+        shimmer: "shimmer 2.5s linear infinite",
+        "spin-slow": "spin-slow 14s linear infinite",
       },
     },
   },

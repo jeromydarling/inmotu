@@ -27,8 +27,8 @@ export default function Tracks() {
           Tracks worth fighting for.
         </h1>
         <p className="mt-2 max-w-2xl text-white/55">
-          Rich profiles for every venue — events, surface, amenities, and threat status. Endangered
-          tracks are flagged for the Frontline.
+          The places we gather, mapped and remembered — events, surface, amenities, and threat
+          status. Tracks under threat are flagged so the community can rally behind them.
         </p>
       </header>
 

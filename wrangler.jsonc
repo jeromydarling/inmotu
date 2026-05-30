@@ -34,6 +34,15 @@
       "id": "ec58fe1dc3b340b1b175e39b3f2e0333"
     }
   ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "inmotu-media"
+    }
+  ],
+  "ai": {
+    "binding": "AI"
+  },
   "vars": {
     "APP_ENV": "production",
     "APP_URL": "https://inmotu.pro",

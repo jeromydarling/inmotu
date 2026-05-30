@@ -73,8 +73,9 @@ export default function Grid() {
           Every race in America. One calendar.
         </h1>
         <p className="mt-2 max-w-2xl text-white/55">
-          Filter by discipline and level. Save events to your calendar and get deadline alerts
-          before registration closes.
+          Find where your people are racing next. Filter by discipline and level, save events to
+          your calendar, and get a nudge before registration closes — so you never miss the
+          weekend that matters.
         </p>
       </header>
 

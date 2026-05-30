@@ -2,6 +2,7 @@ import { Routes, Route, Outlet, Navigate, useLocation } from "react-router-dom";
 import { Header, Footer } from "./components/Layout";
 import { useAuth } from "./state/auth";
 import { Spinner } from "./components/ui";
+import { useEffect } from "react";
 
 import Landing from "./pages/Landing";
 import Grid from "./pages/Grid";
@@ -15,10 +16,15 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 
 function Shell() {
+  const { pathname } = useLocation();
+  // Scroll to top + replay a soft fade on every route change.
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+  }, [pathname]);
   return (
     <div className="flex min-h-full flex-col">
       <Header />
-      <main className="flex-1">
+      <main key={pathname} className="flex-1 animate-fade-up">
         <Outlet />
       </main>
       <Footer />

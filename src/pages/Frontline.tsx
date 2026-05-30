@@ -62,8 +62,9 @@ export default function Frontline() {
           Right to Race. Right now.
         </h1>
         <p className="mt-2 max-w-2xl text-white/55">
-          Track every Right to Race bill in America, pledge your support, and contact your
-          representative in one tap. Free forever — because this is the mission.
+          The tracks where we gather have anchored their towns for generations. Track every Right
+          to Race bill, add your name, and reach your representative in one tap. Free forever —
+          because no track, and no family, should have to stand alone.
         </p>
         <div className="mt-5 flex flex-wrap gap-3">
           <div className="panel px-5 py-3">

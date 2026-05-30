@@ -31,7 +31,7 @@ export default function Register() {
   }
 
   return (
-    <AuthShell title="Start free" subtitle="The Grid and Frontline are free forever. No card required.">
+    <AuthShell title="Find your people" subtitle="The Grid and the Frontline are free forever. No card, no catch — just pull in.">
       <form onSubmit={submit} className="space-y-4">
         {err && (
           <div className="rounded-xl border border-flag-red/30 bg-flag-red/10 px-3.5 py-2.5 text-sm text-flag-red">

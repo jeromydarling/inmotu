@@ -10,6 +10,7 @@ import billing from "./routes/billing";
 import meta from "./routes/meta";
 import tower from "./routes/tower";
 import garage from "./routes/garage";
+import img from "./routes/img";
 
 const app = new Hono<{ Bindings: Env; Variables: Vars }>();
 
@@ -27,6 +28,7 @@ api.route("/billing", billing);
 api.route("/meta", meta);
 api.route("/tower", tower);
 api.route("/garage", garage);
+api.route("/img", img);
 
 api.notFound((c) => c.json({ error: "Not found" }, 404));
 api.onError((err, c) => {

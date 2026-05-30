@@ -1,45 +1,61 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
-import { Badge, Stat } from "../components/ui";
+import { Badge } from "../components/ui";
+import { Reveal, CountUp, Marquee, AiImage, SpeedLines } from "../components/motion";
 
 const modules = [
   {
     tag: "The Grid",
     title: "Every race. One calendar.",
-    body: "The first unified feed of every sanctioned amateur event in America — motocross, autocross, road race, endurance, short track — filtered to your disciplines, region, and class. Smart deadline alerts so you never miss a Monday cutoff.",
+    body: "The first unified feed of every grassroots event near you — motocross, autocross, road race, endurance, short track. Filtered to your disciplines and class, with alerts so a missed Monday deadline never ends your season.",
     accent: "ignition",
   },
   {
     tag: "The Pit Board",
-    title: "Your whole racing family, organized.",
-    body: "Multi-rider profiles, digital licenses and waivers, maintenance logs, gear checklists, and a season budget tracker built for families spending real money to chase the ladder.",
+    title: "Your whole family, in one place.",
+    body: "Every rider in the family, their schedules, gear checklists, maintenance logs, and the real season budget — organized, shared, and ready before the gate drops.",
     accent: "amber",
   },
   {
-    tag: "Road to Loretta's",
-    title: "Track the ladder in real time.",
-    body: "The qualifying tracker no one else has. See attended Area Qualifiers, advancement positions, and the exact path to Nationals — by region, by class, by rider.",
+    tag: "Road to the Ranch",
+    title: "Track the ladder, together.",
+    body: "See attended qualifiers, advancement positions, and the exact path to Nationals — by region, by class, by rider. The thing every family chasing the dream has been doing on a napkin until now.",
     accent: "green",
   },
   {
     tag: "The Tower",
-    title: "Run your track like a business.",
-    body: "Online registration, waivers, payments, series points, sponsor CRM, and one-click economic-impact reports — affordable software for the family-run tracks that hold this sport together.",
+    title: "Help your home track thrive.",
+    body: "Registration, waivers, payments, points, and one-click economic-impact reports — affordable tools for the family-run tracks that hold this whole thing together.",
     accent: "ignition",
   },
   {
     tag: "The Garage",
-    title: "Team ops that rival the pros.",
-    body: "Setup database by track and conditions, endurance stint planner with fuel windows, live cellular pit board, parts inventory, and sponsorship portfolios — priced for mortals.",
+    title: "Crew like the pros do.",
+    body: "Setup database by track and conditions, an endurance stint planner with live fuel math, parts tracking, and sponsor portfolios — shared with everyone wearing your colors.",
     accent: "amber",
   },
   {
     tag: "The Frontline",
-    title: "Fight to keep tracks alive.",
-    body: "Right to Race bill tracker across 14 states, an endangered-tracks map, and one-tap legislator contact. The advocacy network no commercial competitor would ever build.",
+    title: "When a track is threatened, we show up.",
+    body: "A Right to Race bill tracker across 14 states, an endangered-tracks map, and one-tap legislator contact. Because the places we gather are worth standing up for — and nobody should fight for them alone.",
     accent: "green",
   },
+];
+
+const tickers = [
+  "Nobody races alone",
+  "Motocross",
+  "First race? You belong here",
+  "Autocross",
+  "Pass it down",
+  "Road Racing",
+  "Hold the line together",
+  "Endurance",
+  "Save your home track",
+  "Short Track",
+  "From the PW50 to the pit chair",
+  "Karting",
 ];
 
 export default function Landing() {
@@ -50,14 +66,20 @@ export default function Landing() {
 
   return (
     <div>
-      {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 bg-grid-fade" />
-        <div
-          className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-60"
-          style={{ background: "linear-gradient(90deg,transparent,rgba(255,77,20,.6),transparent)" }}
+      {/* ─── HERO ─────────────────────────────────────────────── */}
+      <section className="relative isolate overflow-hidden">
+        <AiImage
+          slug="hero"
+          kenBurns
+          overlay={false}
+          className="absolute inset-0 -z-10 h-full w-full"
+          imgClassName="opacity-50"
         />
-        <div className="container-page relative grid gap-12 py-20 lg:grid-cols-[1.1fr_0.9fr] lg:py-28">
+        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-carbon-950 via-carbon-950/85 to-carbon-950/30" />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-t from-carbon-950 via-transparent to-carbon-950/60" />
+        <SpeedLines className="-z-10 opacity-70" />
+
+        <div className="container-page relative grid gap-12 py-24 lg:grid-cols-[1.15fr_0.85fr] lg:py-32">
           <div className="animate-fade-up">
             <div className="mb-5 flex items-center gap-3">
               <Badge tone="live">
@@ -65,137 +87,233 @@ export default function Landing() {
                 Now in beta · 2026 season
               </Badge>
             </div>
-            <h1 className="font-display text-5xl font-black leading-[0.95] tracking-tightest text-white sm:text-6xl lg:text-7xl">
+            <h1 className="font-display text-5xl font-black leading-[0.92] tracking-tightest text-white drop-shadow-[0_2px_30px_rgba(0,0,0,0.8)] sm:text-6xl lg:text-[5.25rem]">
               Grassroots
               <br />
               motorsports,
               <br />
-              <span className="text-ignition">in motion.</span>
+              <span className="bg-gradient-to-r from-ignition via-ignition-300 to-amber bg-clip-text text-transparent">
+                in motion.
+              </span>
             </h1>
-            <p className="mt-6 max-w-xl text-lg text-white/60">
-              One app for the family in the pits: the unified event calendar, your riders, your
-              budget, the qualifying ladder, and the fight to keep local tracks alive. Built to
-              rival pro tools — priced for the paddock.
+            <p className="mt-6 max-w-xl text-lg text-white/70">
+              One home for the whole racing family — the calendar, your riders, the ladder, and the
+              people who pull in beside you. Because nobody should have to figure this out alone.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link to="/register" className="btn-primary px-5 py-3 text-base">
-                Start free →
+              <Link to="/register" className="btn-primary px-6 py-3 text-base">
+                Find your people →
               </Link>
-              <Link to="/grid" className="btn-ghost px-5 py-3 text-base">
+              <Link to="/grid" className="btn-ghost px-6 py-3 text-base backdrop-blur">
                 Browse The Grid
               </Link>
             </div>
-            <p className="mt-4 text-xs text-white/35">
-              Free forever for the calendar &amp; advocacy tools. No card required.
+            <p className="mt-4 text-xs text-white/45">
+              Free forever for the calendar &amp; the cause. No card, no catch.
             </p>
           </div>
 
-          {/* Hero card: live ladder snapshot */}
-          <div className="animate-fade-up [animation-delay:120ms]">
+          <div className="hidden animate-fade-up [animation-delay:140ms] lg:block">
             <LadderPreview />
           </div>
         </div>
 
         {/* Stat strip */}
-        <div className="border-y border-white/[0.06] bg-carbon-900/40">
+        <div className="border-y border-white/[0.08] bg-carbon-950/70 backdrop-blur">
           <div className="container-page grid grid-cols-2 gap-6 py-8 sm:grid-cols-4">
-            <Stat value={stats ? stats.upcoming_events : "—"} label="Upcoming events" />
-            <Stat value={stats ? stats.tracks : "—"} label="Tracks tracked" />
-            <Stat value={stats ? stats.active_bills : "—"} label="Active Right-to-Race bills" />
-            <Stat value={stats ? stats.enacted_bills : "—"} label="Laws enacted" />
+            <StatBlock value={stats?.upcoming_events} label="Events on The Grid" />
+            <StatBlock value={stats?.tracks} label="Tracks in the network" />
+            <StatBlock value={stats?.active_bills} label="Right-to-Race bills live" />
+            <StatBlock value={stats?.enacted_bills} label="Tracks already protected" />
           </div>
         </div>
       </section>
 
-      {/* The problem */}
-      <section className="container-page py-20">
-        <div className="mx-auto max-w-3xl text-center">
-          <p className="eyebrow">The white space</p>
-          <h2 className="mt-3 font-display text-3xl font-extrabold text-white sm:text-4xl">
-            The most expensive youth sport in America runs on Facebook groups and paper sign-in
-            sheets.
-          </h2>
-          <p className="mt-4 text-white/55">
-            Hundreds of thousands of families and 70,000+ SCCA members deserve better than scattered
-            calendars, missed deadlines, and ten different apps. inmotu unifies all of it — and
-            turns the community into a force that can save the tracks themselves.
-          </p>
-        </div>
-      </section>
-
-      {/* Modules */}
-      <section className="container-page pb-8">
-        <div className="mb-10 flex items-end justify-between">
-          <div>
-            <p className="eyebrow">Five modules, one identity</p>
-            <h2 className="mt-2 font-display text-3xl font-extrabold sm:text-4xl">
-              Built for everyone in the paddock.
-            </h2>
-          </div>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {modules.map((m, i) => (
-            <ModuleCard key={m.tag} {...m} index={i} />
+      {/* ─── TICKER ───────────────────────────────────────────── */}
+      <section className="border-b border-white/[0.06] bg-carbon-900/40 py-4">
+        <Marquee>
+          {tickers.map((t, i) => (
+            <span key={i} className="flex items-center gap-8 whitespace-nowrap">
+              <span className="font-display text-sm font-bold uppercase tracking-widest text-white/55">
+                {t}
+              </span>
+              <span className="h-1.5 w-1.5 rotate-45 bg-ignition/70" />
+            </span>
           ))}
-        </div>
+        </Marquee>
       </section>
 
-      {/* Advocacy band */}
-      <section className="container-page py-20">
-        <div className="panel relative overflow-hidden p-8 sm:p-12">
-          <div className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-ignition/10 blur-3xl" />
-          <div className="relative grid items-center gap-8 lg:grid-cols-[1.2fr_0.8fr]">
-            <div>
-              <Badge tone="red">The moat</Badge>
-              <h2 className="mt-4 font-display text-3xl font-extrabold sm:text-4xl">
-                Tracks are dying. We're building the network that fights back.
+      {/* ─── COMMUNITY: NOBODY RACES ALONE ────────────────────── */}
+      <section className="container-page py-24">
+        <div className="grid items-center gap-12 lg:grid-cols-[0.95fr_1.05fr]">
+          <Reveal>
+            <AiImage
+              slug="paddock"
+              kenBurns
+              className="aspect-[4/3] w-full rounded-3xl border border-white/10 shadow-panel"
+            />
+          </Reveal>
+          <div>
+            <Reveal>
+              <p className="eyebrow">Nobody races alone</p>
+              <h2 className="mt-3 font-display text-3xl font-extrabold tracking-tightest sm:text-4xl">
+                A paddock is more than a parking lot. It's a place you belong.
               </h2>
-              <p className="mt-4 max-w-xl text-white/60">
-                14 state legislatures have Right to Race bills moving right now. SEMA lobbies, the
-                AMA tracks bills on a text-only web page — but no app helps everyday families
-                monitor legislation, contact reps, and organize. The Frontline does, and it's free
-                forever.
+              <p className="mt-4 text-white/60">
+                The best part of this sport was never the trophies. It's the neighbor who lends you
+                a tool, the family that waves you into the spot next to theirs, the people who learn
+                your kid's number and cheer like it's their own. inmotu is built to protect that —
+                and put it in everyone's pocket.
               </p>
-              <Link to="/frontline" className="btn-primary mt-6">
-                Open The Frontline →
-              </Link>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
+            </Reveal>
+            <div className="mt-8 space-y-4">
               {[
-                ["Iowa", "Enacted ✓"],
-                ["N. Carolina", "Enacted ✓"],
-                ["Tennessee", "Passed chamber"],
-                ["Minnesota", "In committee"],
-              ].map(([s, st]) => (
-                <div key={s} className="rounded-xl border border-white/10 bg-carbon-900/60 p-4">
-                  <div className="font-display text-lg font-bold text-white">{s}</div>
-                  <div className="mt-1 text-xs font-medium text-ignition-300">{st}</div>
-                </div>
+                ["A place in the paddock", "Every family gets a profile and a crew from day one. First race or fiftieth, there's room for you here."],
+                ["We show up for each other", "Shared checklists, structured crews, deadline alerts — the help that used to mean knocking on the next trailer over."],
+                ["What we build, we hand down", "From the four-year-old on a PW50 to the grandparent in the pit chair. We're keeping this alive for whoever's next."],
+              ].map(([t, b], i) => (
+                <Reveal key={t} delay={i * 90}>
+                  <div className="flex gap-4">
+                    <div className="mt-1 h-10 w-1 shrink-0 rounded-full bg-gradient-to-b from-ignition to-amber" />
+                    <div>
+                      <h3 className="font-display text-lg font-bold text-white">{t}</h3>
+                      <p className="text-sm text-white/55">{b}</p>
+                    </div>
+                  </div>
+                </Reveal>
               ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* Final CTA */}
-      <section className="container-page pb-24">
-        <div className="relative overflow-hidden rounded-3xl border border-ignition/30 bg-gradient-to-br from-ignition/15 via-carbon-850 to-carbon-900 p-10 text-center sm:p-16">
-          <h2 className="font-display text-4xl font-black tracking-tightest sm:text-5xl">
-            Your season starts here.
+      {/* ─── THE PROBLEM ──────────────────────────────────────── */}
+      <section className="container-page pb-8">
+        <Reveal className="mx-auto max-w-3xl text-center">
+          <p className="eyebrow">Why we built this</p>
+          <h2 className="mt-3 font-display text-3xl font-extrabold tracking-tightest sm:text-4xl">
+            The most committed community in sports — scattered across ten apps and a hundred group
+            chats.
           </h2>
-          <p className="mx-auto mt-3 max-w-md text-white/60">
-            Join the families and tracks building the backbone of American grassroots racing.
+          <p className="mt-4 text-white/60">
+            Hundreds of thousands of families pour everything into this. They deserve more than
+            missed deadlines, paper sign-in sheets, and the feeling of doing it all alone. inmotu
+            pulls it together — and turns a scattered crowd into a community that can look after its
+            own.
           </p>
-          <div className="mt-7 flex flex-wrap justify-center gap-3">
-            <Link to="/register" className="btn-primary px-6 py-3 text-base">
-              Create your free account
-            </Link>
-            <Link to="/pricing" className="btn-ghost px-6 py-3 text-base">
-              See plans
-            </Link>
-          </div>
+        </Reveal>
+      </section>
+
+      {/* ─── MODULES ──────────────────────────────────────────── */}
+      <section className="container-page py-16">
+        <Reveal className="mb-10">
+          <p className="eyebrow">Five tools, one family</p>
+          <h2 className="mt-2 font-display text-3xl font-extrabold tracking-tightest sm:text-4xl">
+            Everything the paddock needs — built for everyone in it.
+          </h2>
+        </Reveal>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {modules.map((m, i) => (
+            <Reveal key={m.tag} delay={(i % 3) * 80}>
+              <ModuleCard {...m} index={i} />
+            </Reveal>
+          ))}
         </div>
       </section>
+
+      {/* ─── ACTION GALLERY ───────────────────────────────────── */}
+      <section className="py-10">
+        <Marquee speed="marquee-slow" className="gap-4">
+          {["mx", "car", "start", "frontline"].map((s) => (
+            <div
+              key={s}
+              className="relative h-56 w-80 shrink-0 overflow-hidden rounded-2xl border border-white/10 sm:h-64 sm:w-[26rem]"
+            >
+              <AiImage slug={s} className="h-full w-full" kenBurns />
+            </div>
+          ))}
+        </Marquee>
+      </section>
+
+      {/* ─── ADVOCACY ─────────────────────────────────────────── */}
+      <section className="container-page py-24">
+        <Reveal>
+          <div className="panel relative overflow-hidden">
+            <AiImage slug="frontline" className="absolute inset-0 h-full w-full" overlay={false} imgClassName="opacity-30" />
+            <div className="absolute inset-0 bg-gradient-to-r from-carbon-900 via-carbon-900/90 to-carbon-900/40" />
+            <SpeedLines className="opacity-50" />
+            <div className="relative grid items-center gap-8 p-8 sm:p-12 lg:grid-cols-[1.2fr_0.8fr]">
+              <div>
+                <Badge tone="red">The cause</Badge>
+                <h2 className="mt-4 font-display text-3xl font-extrabold tracking-tightest sm:text-4xl">
+                  When a track is threatened, we don't watch it close.
+                </h2>
+                <p className="mt-4 max-w-xl text-white/65">
+                  These places have anchored their communities for generations. When developers and
+                  noise suits come for them, families shouldn't have to fight alone. The Frontline
+                  tracks every Right to Race bill, maps the tracks under threat, and gets your voice
+                  to your representative in a single tap — and it's free forever.
+                </p>
+                <Link to="/frontline" className="btn-primary mt-6">
+                  Stand with your track →
+                </Link>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  ["Iowa", "Protected ✓"],
+                  ["N. Carolina", "Protected ✓"],
+                  ["Tennessee", "Passed chamber"],
+                  ["Minnesota", "In committee"],
+                ].map(([s, st], i) => (
+                  <Reveal key={s} delay={i * 80}>
+                    <div className="rounded-xl border border-white/10 bg-carbon-950/70 p-4 backdrop-blur">
+                      <div className="font-display text-lg font-bold text-white">{s}</div>
+                      <div className="mt-1 text-xs font-medium text-ignition-300">{st}</div>
+                    </div>
+                  </Reveal>
+                ))}
+              </div>
+            </div>
+          </div>
+        </Reveal>
+      </section>
+
+      {/* ─── FINAL CTA ────────────────────────────────────────── */}
+      <section className="container-page pb-28">
+        <Reveal>
+          <div className="relative isolate overflow-hidden rounded-3xl border border-ignition/30 p-10 text-center sm:p-16">
+            <AiImage slug="start" className="absolute inset-0 -z-10 h-full w-full" overlay={false} kenBurns imgClassName="opacity-40" />
+            <div className="absolute inset-0 -z-10 bg-gradient-to-b from-carbon-950/80 via-carbon-950/70 to-carbon-950/90" />
+            <SpeedLines className="-z-10" />
+            <h2 className="font-display text-4xl font-black tracking-tightest drop-shadow-lg sm:text-5xl">
+              Pull into the paddock.
+            </h2>
+            <p className="mx-auto mt-3 max-w-md text-white/70">
+              Join the families and tracks building the backbone of American grassroots racing —
+              one weekend, one rider, one saved track at a time.
+            </p>
+            <div className="mt-8 flex flex-wrap justify-center gap-3">
+              <Link to="/register" className="btn-primary px-7 py-3.5 text-base">
+                Create your free account
+              </Link>
+              <Link to="/pricing" className="btn-ghost px-7 py-3.5 text-base backdrop-blur">
+                See plans
+              </Link>
+            </div>
+          </div>
+        </Reveal>
+      </section>
+    </div>
+  );
+}
+
+function StatBlock({ value, label }: { value: number | undefined; label: string }) {
+  return (
+    <div>
+      <div className="font-display text-3xl font-extrabold text-white sm:text-4xl">
+        {value == null ? "—" : <CountUp key={value} to={value} />}
+      </div>
+      <div className="mt-1 text-xs font-medium uppercase tracking-wide text-white/45">{label}</div>
     </div>
   );
 }
@@ -213,17 +331,20 @@ function ModuleCard({
   accent: string;
   index: number;
 }) {
-  const dot =
-    accent === "amber" ? "bg-amber" : accent === "green" ? "bg-flag-green" : "bg-ignition";
+  const dot = accent === "amber" ? "bg-amber" : accent === "green" ? "bg-flag-green" : "bg-ignition";
   return (
-    <div className="panel group p-6 transition hover:-translate-y-0.5 hover:border-white/15">
+    <div className="panel group relative h-full overflow-hidden p-6 transition duration-300 hover:-translate-y-1 hover:border-white/20">
+      <div
+        className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-ignition/0 blur-2xl transition-colors duration-500 group-hover:bg-ignition/10"
+      />
       <div className="mb-3 flex items-center gap-2">
-        <span className={`h-2 w-2 rounded-full ${dot}`} />
+        <span className={`h-2 w-2 rounded-full ${dot} transition group-hover:animate-pulse-live`} />
         <span className="text-xs font-bold uppercase tracking-wider text-white/50">{tag}</span>
         <span className="ml-auto font-mono text-xs text-white/20">0{index + 1}</span>
       </div>
       <h3 className="font-display text-xl font-bold text-white">{title}</h3>
       <p className="mt-2 text-sm leading-relaxed text-white/55">{body}</p>
+      <div className="mt-4 h-px w-0 bg-gradient-to-r from-ignition to-amber transition-all duration-500 group-hover:w-full" />
     </div>
   );
 }
@@ -232,15 +353,15 @@ function LadderPreview() {
   const stages = [
     { name: "Area Qualifier", place: "P2", done: true, region: "North Central" },
     { name: "Regional Championship", place: "P4", done: true, region: "North Central" },
-    { name: "AMA Amateur National", place: "—", done: false, region: "Loretta Lynn's" },
+    { name: "AMA Amateur National", place: "—", done: false, region: "the Ranch" },
   ];
   return (
-    <div className="panel overflow-hidden">
+    <div className="panel overflow-hidden shadow-glow animate-float">
       <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-3">
         <div className="flex items-center gap-2">
           <span className="h-2 w-2 animate-pulse-live rounded-full bg-flag-green" />
           <span className="text-xs font-semibold uppercase tracking-wider text-white/60">
-            Road to Loretta's · Live
+            Road to the Ranch · Live
           </span>
         </div>
         <span className="font-mono text-xs text-white/30">85cc (10-12)</span>
@@ -264,18 +385,14 @@ function LadderPreview() {
               <div className="truncate text-sm font-semibold text-white">{s.name}</div>
               <div className="text-xs text-white/40">{s.region}</div>
             </div>
-            <div
-              className={`font-display text-lg font-extrabold ${
-                s.done ? "text-flag-green" : "text-white/25"
-              }`}
-            >
+            <div className={`font-display text-lg font-extrabold ${s.done ? "text-flag-green" : "text-white/25"}`}>
               {s.place}
             </div>
           </div>
         ))}
       </div>
       <div className="border-t border-white/[0.06] px-5 py-3 text-xs text-white/40">
-        2 of 3 stages cleared · advancing to Nationals
+        2 of 3 cleared · the whole crew's behind you
       </div>
     </div>
   );

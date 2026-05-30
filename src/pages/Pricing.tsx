@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { Badge } from "../components/ui";
+import { Reveal } from "../components/motion";
 import { useAuth } from "../state/auth";
 
 const tiers = [
@@ -10,7 +11,7 @@ const tiers = [
     name: "Free",
     price: "$0",
     cadence: "forever",
-    tagline: "The Grid + Frontline, always free.",
+    tagline: "Your place in the paddock, on us.",
     features: [
       "Full event calendar & deadline alerts",
       "1 rider profile",
@@ -103,8 +104,8 @@ export default function Pricing() {
           Built to rival pro tools. Priced for the paddock.
         </h1>
         <p className="mt-3 text-white/55">
-          The calendar and advocacy tools are free forever. Upgrade when your family or team needs
-          more.
+          The calendar and the cause are free forever — that part belongs to everyone. Upgrade when
+          your family or team is ready for more.
         </p>
       </div>
 
@@ -115,11 +116,11 @@ export default function Pricing() {
       )}
 
       <div className="mt-10 grid gap-4 lg:grid-cols-4">
-        {tiers.map((t) => (
+        {tiers.map((t, i) => (
+          <Reveal key={t.id} delay={i * 80} className="h-full">
           <div
-            key={t.id}
-            className={`panel relative flex flex-col p-6 ${
-              t.highlight ? "border-ignition/40 shadow-glow" : ""
+            className={`panel relative flex h-full flex-col p-6 transition duration-300 hover:-translate-y-1 ${
+              t.highlight ? "border-ignition/40 shadow-glow" : "hover:border-white/20"
             }`}
           >
             {t.highlight && (
@@ -148,6 +149,7 @@ export default function Pricing() {
               {t.cta}
             </button>
           </div>
+          </Reveal>
         ))}
       </div>
 
