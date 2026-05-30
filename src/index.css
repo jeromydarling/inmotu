@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-carbon-950 text-white/90 font-sans antialiased;
+    background-image:
+      radial-gradient(1200px 600px at 50% -10%, rgba(255, 77, 20, 0.10), transparent 60%),
+      linear-gradient(180deg, #07080b 0%, #090b10 100%);
+    background-attachment: fixed;
+  }
+  ::selection {
+    @apply bg-ignition/30 text-white;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-display tracking-tightest;
+  }
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-7xl px-5 sm:px-8;
+  }
+  .panel {
+    @apply rounded-2xl border border-white/[0.07] bg-carbon-850/70 shadow-panel backdrop-blur-sm;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition
+      focus:outline-none focus-visible:ring-2 focus-visible:ring-ignition/60 disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-ignition text-white hover:bg-ignition-400 shadow-glow;
+  }
+  .btn-ghost {
+    @apply btn border border-white/10 bg-white/[0.03] text-white/80 hover:bg-white/[0.07] hover:text-white;
+  }
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-medium text-white/70;
+  }
+  .field {
+    @apply w-full rounded-xl border border-white/10 bg-carbon-900/80 px-3.5 py-2.5 text-sm text-white
+      placeholder:text-white/30 focus:border-ignition/50 focus:outline-none focus:ring-2 focus:ring-ignition/30;
+  }
+  .label {
+    @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-white/50;
+  }
+  .eyebrow {
+    @apply text-xs font-bold uppercase tracking-[0.18em] text-ignition;
+  }
+}
+
+/* thin scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+}

@@ -1,0 +1,159 @@
+import { useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import { api } from "../api/client";
+import { Badge, Spinner } from "../components/ui";
+import { fmtDate, fmtMoney, daysUntil, titleCase } from "../lib/format";
+import { useAuth } from "../state/auth";
+
+export default function EventDetail() {
+  const { slug } = useParams();
+  const { user } = useAuth();
+  const [e, setE] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!slug) return;
+    api
+      .event(slug)
+      .then((r) => setE(r.event))
+      .catch(() => setE(null))
+      .finally(() => setLoading(false));
+  }, [slug]);
+
+  async function toggleSave() {
+    if (!user) {
+      window.location.href = "/login";
+      return;
+    }
+    setE((p: any) => ({ ...p, saved: !p.saved }));
+    await api.toggleSave(e.id).catch(() => setE((p: any) => ({ ...p, saved: !p.saved })));
+  }
+
+  function downloadIcs() {
+    const dt = (s: number) =>
+      new Date(s * 1000).toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+    const ics = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//inmotu//Grid//EN",
+      "BEGIN:VEVENT",
+      `UID:${e.id}@inmotu.pro`,
+      `DTSTAMP:${dt(Math.floor(Date.now() / 1000))}`,
+      `DTSTART:${dt(e.starts_at)}`,
+      e.ends_at ? `DTEND:${dt(e.ends_at)}` : `DTEND:${dt(e.starts_at + 86400)}`,
+      `SUMMARY:${e.title}`,
+      `LOCATION:${e.track_name ?? ""}${e.track_state ? `, ${e.track_state}` : ""}`,
+      `DESCRIPTION:via inmotu — ${e.external_url ?? "inmotu.pro"}`,
+      "END:VEVENT",
+      "END:VCALENDAR",
+    ].join("\r\n");
+    const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${e.slug}.ics`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  if (loading)
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <Spinner className="h-8 w-8" />
+      </div>
+    );
+  if (!e)
+    return (
+      <div className="container-page py-24 text-center text-white/50">
+        Event not found. <Link to="/grid" className="text-ignition">Back to The Grid</Link>
+      </div>
+    );
+
+  const regClose = daysUntil(e.reg_closes_at);
+
+  return (
+    <div className="container-page py-12">
+      <Link to="/grid" className="text-sm text-white/40 hover:text-white">
+        ← The Grid
+      </Link>
+
+      <div className="mt-4 grid gap-8 lg:grid-cols-[1.4fr_0.6fr]">
+        <div>
+          <div className="mb-3 flex flex-wrap gap-2">
+            {e.level && <Badge tone="amber">{titleCase(e.level)}</Badge>}
+            {e.discipline && <Badge>{titleCase(e.discipline)}</Badge>}
+            {e.body_slug && <Badge tone="muted">{String(e.body_slug).toUpperCase()}</Badge>}
+            {e.age_group && <Badge tone="muted">{titleCase(e.age_group)}</Badge>}
+          </div>
+          <h1 className="font-display text-4xl font-extrabold tracking-tightest">{e.title}</h1>
+          <p className="mt-2 text-lg text-white/55">{fmtDate(e.starts_at)}</p>
+
+          {regClose != null && regClose >= 0 && regClose <= 14 && (
+            <div className="mt-5 flex items-center gap-2 rounded-xl border border-flag-red/30 bg-flag-red/10 px-4 py-3 text-sm">
+              <span className="h-2 w-2 animate-pulse-live rounded-full bg-flag-red" />
+              <span className="font-semibold text-flag-red">
+                Registration closes in {regClose} day{regClose === 1 ? "" : "s"}
+              </span>
+              <span className="text-white/40">· {fmtDate(e.reg_closes_at)}</span>
+            </div>
+          )}
+
+          <div className="panel mt-6 grid grid-cols-2 gap-px overflow-hidden sm:grid-cols-4">
+            <Fact label="Entry fee" value={fmtMoney(e.entry_fee_cents)} />
+            <Fact label="Gate fee" value={fmtMoney(e.gate_fee_cents)} />
+            <Fact label="Region" value={e.region ?? "—"} />
+            <Fact label="Source" value={String(e.source).toUpperCase()} />
+          </div>
+
+          {e.track_name && (
+            <div className="panel mt-6 p-6">
+              <p className="eyebrow">Venue</p>
+              <Link
+                to={`/tracks/${e.track_slug}`}
+                className="mt-2 block font-display text-2xl font-bold hover:text-ignition-300"
+              >
+                {e.track_name}
+              </Link>
+              <p className="text-white/50">
+                {e.track_city}, {e.track_state}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Action rail */}
+        <aside className="lg:sticky lg:top-24 lg:self-start">
+          <div className="panel p-6">
+            <button onClick={toggleSave} className={e.saved ? "btn-ghost w-full" : "btn-primary w-full"}>
+              {e.saved ? "★ Saved to calendar" : "☆ Save to my calendar"}
+            </button>
+            <button onClick={downloadIcs} className="btn-ghost mt-3 w-full">
+              Add to device calendar (.ics)
+            </button>
+            {e.external_url && (
+              <a
+                href={e.external_url}
+                target="_blank"
+                rel="noreferrer"
+                className="btn-ghost mt-3 w-full"
+              >
+                Register at source ↗
+              </a>
+            )}
+            <p className="mt-4 text-center text-xs text-white/35">
+              Saving syncs deadline alerts to your dashboard.
+            </p>
+          </div>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+function Fact({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="bg-carbon-850 p-4">
+      <div className="text-[11px] font-semibold uppercase tracking-wide text-white/40">{label}</div>
+      <div className="mt-1 font-display text-lg font-bold text-white">{value}</div>
+    </div>
+  );
+}

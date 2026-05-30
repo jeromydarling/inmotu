@@ -1,0 +1,35 @@
+{
+  "name": "inmotu",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "inmotu — the operating system for grassroots motorsports.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "deploy": "npm run build && wrangler deploy",
+    "cf-typegen": "wrangler types",
+    "db:migrate:local": "wrangler d1 migrations apply inmotu-prod --local",
+    "db:migrate:remote": "wrangler d1 migrations apply inmotu-prod --remote",
+    "typecheck": "tsc -b --noEmit"
+  },
+  "dependencies": {
+    "hono": "^4.6.14",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241218.0",
+    "@types/react": "^18.3.17",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5",
+    "wrangler": "^4.95.0"
+  }
+}

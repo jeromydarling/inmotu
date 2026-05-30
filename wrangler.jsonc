@@ -1,0 +1,34 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "inmotu",
+  "main": "worker/index.ts",
+  "compatibility_date": "2025-05-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./dist/client",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "observability": {
+    "enabled": true
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "inmotu-prod",
+      "database_id": "d9c95da3-c1da-46c5-89dd-830228f4a8c2",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "SESSIONS",
+      "id": "ec58fe1dc3b340b1b175e39b3f2e0333"
+    }
+  ],
+  "vars": {
+    "APP_ENV": "production",
+    "APP_URL": "https://inmotu.pro"
+  }
+}
