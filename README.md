@@ -71,17 +71,22 @@ npm run deploy            # = npm run build && wrangler deploy
 Then bind the custom domain `inmotu.pro` to the Worker (Workers & Pages →
 inmotu → Settings → Domains & Routes → Add custom domain).
 
-### Configure Stripe (optional — billing degrades gracefully without it)
+### Configure Stripe
+
+The three subscription products + live monthly prices already exist in Stripe,
+and their **Price IDs are wired into `wrangler.jsonc`** (Family $9.99, Pro
+$19.99, Tower $49). Only the **secret key** and **webhook secret** remain — set
+them once and live billing is on:
 
 ```bash
-npx wrangler secret put STRIPE_SECRET_KEY
-npx wrangler secret put STRIPE_WEBHOOK_SECRET
-npx wrangler secret put STRIPE_PRICE_FAMILY    # price_… for Family
-npx wrangler secret put STRIPE_PRICE_PRO
-npx wrangler secret put STRIPE_PRICE_TOWER
+npx wrangler secret put STRIPE_SECRET_KEY      # sk_live_…
+npx wrangler secret put STRIPE_WEBHOOK_SECRET  # whsec_…
 ```
 
-Point the Stripe webhook at `https://inmotu.pro/api/billing/webhook`.
+Then add a webhook endpoint in the Stripe dashboard pointing at
+`https://inmotu.pro/api/billing/webhook` (events: `checkout.session.completed`,
+`customer.subscription.*`). Until the secret key is set, checkout returns a
+clean "not configured" message instead of erroring.
 
 ## Scripts
 
@@ -95,6 +100,13 @@ Point the Stripe webhook at `https://inmotu.pro/api/billing/webhook`.
 
 ## Project status
 
-MVP. The Grid, Pit Board, Tracks, Frontline, auth, and Stripe billing are
-functional and tested end-to-end. The Tower and Garage modules extend the same
-schema and are the next build.
+All five modules are built and tested end-to-end:
+
+- **The Grid** — event aggregator, filters, save-to-calendar, .ics export, registration
+- **The Pit Board** — multi-rider family hub, budget tracker
+- **The Tower** — operator event publishing, registrations, economic-impact reports
+- **The Garage** — setup database + endurance stint planner
+- **The Frontline** — Right to Race bill tracker, one-tap legislator contact
+
+Plus first-party auth (PBKDF2 + KV sessions) and Stripe subscription billing
+(live products/prices created; set the secret key to switch on checkout).

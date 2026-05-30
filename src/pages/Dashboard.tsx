@@ -5,8 +5,10 @@ import { useAuth } from "../state/auth";
 import { EventCard } from "../components/EventCard";
 import { Badge, EmptyState, Spinner } from "../components/ui";
 import { fmtMoney, titleCase } from "../lib/format";
+import GaragePanel from "./panels/GaragePanel";
+import TowerPanel from "./panels/TowerPanel";
 
-type Tab = "calendar" | "riders" | "budget";
+type Tab = "calendar" | "riders" | "budget" | "garage" | "tower";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -30,6 +32,8 @@ export default function Dashboard() {
           ["calendar", "My Calendar"],
           ["riders", "Riders"],
           ["budget", "Budget"],
+          ["garage", "Garage"],
+          ["tower", "Tower"],
         ] as [Tab, string][]).map(([t, label]) => (
           <button
             key={t}
@@ -46,6 +50,8 @@ export default function Dashboard() {
       {tab === "calendar" && <CalendarTab />}
       {tab === "riders" && <RidersTab />}
       {tab === "budget" && <BudgetTab />}
+      {tab === "garage" && <GaragePanel />}
+      {tab === "tower" && <TowerPanel />}
     </div>
   );
 }

@@ -143,9 +143,79 @@ export default function EventDetail() {
               Saving syncs deadline alerts to your dashboard.
             </p>
           </div>
+          {user && <RegisterBox eventId={e.id} fee={e.entry_fee_cents} />}
         </aside>
       </div>
     </div>
+  );
+}
+
+function RegisterBox({ eventId, fee }: { eventId: string; fee: number | null }) {
+  const [riders, setRiders] = useState<any[]>([]);
+  const [name, setName] = useState("");
+  const [cls, setCls] = useState("");
+  const [miles, setMiles] = useState("");
+  const [done, setDone] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    api.riders().then((r) => setRiders(r.riders)).catch(() => {});
+  }, []);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setErr(null);
+    try {
+      await api.registerForEvent(eventId, {
+        rider_name: name,
+        race_class: cls || null,
+        travel_miles: miles ? Number(miles) : null,
+      });
+      setDone(true);
+    } catch (e: any) {
+      setErr(e.message || "Registration failed");
+    }
+  }
+
+  if (done)
+    return (
+      <div className="panel mt-4 border-flag-green/30 p-6 text-center">
+        <div className="text-2xl">✅</div>
+        <p className="mt-1 font-display font-bold text-flag-green">{name} is registered</p>
+        <p className="text-xs text-white/45">Find it under Dashboard → My Calendar.</p>
+      </div>
+    );
+
+  return (
+    <form onSubmit={submit} className="panel mt-4 p-6">
+      <p className="eyebrow">Register a rider</p>
+      {err && <div className="mt-2 rounded-lg border border-flag-red/30 bg-flag-red/10 px-3 py-2 text-xs text-flag-red">{err}</div>}
+      <input
+        className="field mt-3"
+        list="rider-list"
+        placeholder="Rider name"
+        value={name}
+        onChange={(e) => {
+          setName(e.target.value);
+          const m = riders.find((r) => r.name === e.target.value);
+          if (m) setCls(m.race_class || "");
+        }}
+        required
+      />
+      <datalist id="rider-list">
+        {riders.map((r) => (
+          <option key={r.id} value={r.name} />
+        ))}
+      </datalist>
+      <input className="field mt-2" placeholder="Class" value={cls} onChange={(e) => setCls(e.target.value)} />
+      <input className="field mt-2" type="number" placeholder="Travel distance (miles)" value={miles} onChange={(e) => setMiles(e.target.value)} />
+      <button className="btn-primary mt-3 w-full">
+        Register{fee != null ? ` · ${fmtMoney(fee)}` : ""}
+      </button>
+      <p className="mt-2 text-center text-[11px] text-white/35">
+        Travel miles feed the track's economic-impact report.
+      </p>
+    </form>
   );
 }
 

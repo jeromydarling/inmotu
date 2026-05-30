@@ -8,6 +8,8 @@ import riders from "./routes/riders";
 import advocacy from "./routes/advocacy";
 import billing from "./routes/billing";
 import meta from "./routes/meta";
+import tower from "./routes/tower";
+import garage from "./routes/garage";
 
 const app = new Hono<{ Bindings: Env; Variables: Vars }>();
 
@@ -23,6 +25,8 @@ api.route("/riders", riders);
 api.route("/advocacy", advocacy);
 api.route("/billing", billing);
 api.route("/meta", meta);
+api.route("/tower", tower);
+api.route("/garage", garage);
 
 api.notFound((c) => c.json({ error: "Not found" }, 404));
 api.onError((err, c) => {

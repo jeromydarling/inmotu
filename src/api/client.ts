@@ -72,6 +72,34 @@ export const api = {
       body: JSON.stringify({ kind, target_type, target_id }),
     }),
 
+  // registration
+  registerForEvent: (id: string, body: Record<string, unknown>) =>
+    req<{ ok: true }>(`/events/${id}/register`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  myRegistrations: () =>
+    req<{ registrations: any[] }>("/events/registrations/mine"),
+
+  // tower (operator)
+  towerEvents: () => req<{ events: any[] }>("/tower/events"),
+  createTowerEvent: (body: Record<string, unknown>) =>
+    req<{ event: any }>("/tower/events", { method: "POST", body: JSON.stringify(body) }),
+  towerRegistrations: (id: string) =>
+    req<{ registrations: any[]; impact: any }>(`/tower/events/${id}/registrations`),
+
+  // garage (team ops)
+  setups: () => req<{ setups: any[] }>("/garage/setups"),
+  createSetup: (body: Record<string, unknown>) =>
+    req<{ ok: true; id: string }>("/garage/setups", { method: "POST", body: JSON.stringify(body) }),
+  deleteSetup: (id: string) =>
+    req<{ ok: true }>(`/garage/setups/${id}`, { method: "DELETE" }),
+  stints: () => req<{ plans: any[] }>("/garage/stints"),
+  createStint: (body: Record<string, unknown>) =>
+    req<{ ok: true; id: string }>("/garage/stints", { method: "POST", body: JSON.stringify(body) }),
+  deleteStint: (id: string) =>
+    req<{ ok: true }>(`/garage/stints/${id}`, { method: "DELETE" }),
+
   // meta + billing
   reference: () =>
     req<{ disciplines: any[]; bodies: any[]; regions: string[] }>("/meta/reference"),

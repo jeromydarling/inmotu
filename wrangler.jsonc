@@ -36,6 +36,11 @@
   ],
   "vars": {
     "APP_ENV": "production",
-    "APP_URL": "https://inmotu.pro"
+    "APP_URL": "https://inmotu.pro",
+    // Stripe Price IDs are not secrets — safe to commit. The secret key and
+    // webhook signing secret must be set via `wrangler secret put`.
+    "STRIPE_PRICE_FAMILY": "price_1TctKERtg7lL4xBXXB9UnfpK",
+    "STRIPE_PRICE_PRO": "price_1TctKGRtg7lL4xBXPxUZIcB5",
+    "STRIPE_PRICE_TOWER": "price_1TctKGRtg7lL4xBX8dd2ZBHp"
   }
 }

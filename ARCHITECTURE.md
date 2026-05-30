@@ -89,13 +89,14 @@ Single user identity feeds all five product modules (see `migrations/0001_init.s
 - **Identity** — `users`, `subscriptions`
 - **Module 1 · The Grid** — `events`, `saved_events`, `tracks`, `ladders`, `ladder_stages`
 - **Module 2 · The Pit Board** — `riders`, `rider_ladder_progress`, `maintenance_logs`, `budget_entries`
+- **Module 3 · The Tower** — `events.operator_id`, `registrations`
+- **Module 4 · The Garage** — `vehicle_setups`, `stint_plans`
 - **Module 5 · The Frontline** — `legislation`, `track_threats`, `advocacy_actions`
 - Reference — `disciplines`, `sanctioning_bodies`
 
 Covering indexes are defined for the hot read paths (event feed by
-discipline + date, legislation by status, tracks by state/status). Modules 3
-(The Tower) and 4 (The Garage) extend this same schema; their tables are the
-natural next migration.
+discipline + date, legislation by status, tracks by state/status,
+registrations by event). All five modules share the one `users` identity.
 
 ## 6. API surface
 
@@ -111,8 +112,11 @@ POST /api/events/:id/save   (auth, toggle)       GET /api/events/saved/mine (aut
 GET  /api/tracks (?discipline&state&status)      GET /api/tracks/:slug
 GET  /api/riders (auth) · POST /api/riders (auth) · DELETE /api/riders/:id (auth)
 GET  /api/riders/budget/summary (auth) · POST /api/riders/budget (auth)
+POST /api/events/:id/register (auth)             GET /api/events/registrations/mine (auth)
 GET  /api/advocacy/legislation (?status&state) · GET /api/advocacy/endangered
 POST /api/advocacy/support (auth)
+GET/POST /api/tower/events (auth, operator)      GET /api/tower/events/:id/registrations (auth)
+GET/POST/DELETE /api/garage/setups (auth)        GET/POST/DELETE /api/garage/stints (auth)
 GET  /api/meta/reference · /api/meta/stats
 GET  /api/billing/plans · POST /api/billing/checkout (auth) · POST /api/billing/webhook
 ```

@@ -121,4 +121,56 @@ events.get("/saved/mine", async (c) => {
   return c.json({ events: results.map((e) => ({ ...e, saved: true })) });
 });
 
+// POST /api/events/:id/register — a family registers a rider (auth)
+events.post("/:id/register", async (c) => {
+  if (!c.var.user) return c.json({ error: "Authentication required" }, 401);
+  const id = c.req.param("id");
+  const b = await c.req.json().catch(() => ({}));
+  if (typeof b.rider_name !== "string" || !b.rider_name.trim())
+    return c.json({ error: "rider_name required" }, 400);
+
+  const ev = await c.env.DB.prepare(
+    "SELECT id, entry_fee_cents FROM events WHERE id = ?",
+  )
+    .bind(id)
+    .first<{ id: string; entry_fee_cents: number | null }>();
+  if (!ev) return c.json({ error: "Event not found" }, 404);
+
+  try {
+    await c.env.DB.prepare(
+      `INSERT INTO registrations (id, event_id, user_id, rider_id, rider_name, race_class, status, amount_cents, travel_miles, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, 'confirmed', ?, ?, ?)`,
+    )
+      .bind(
+        uid("reg_"),
+        id,
+        c.var.user.id,
+        b.rider_id ?? null,
+        b.rider_name.trim(),
+        b.race_class ?? null,
+        ev.entry_fee_cents,
+        typeof b.travel_miles === "number" ? b.travel_miles : null,
+        now(),
+      )
+      .run();
+  } catch {
+    return c.json({ error: "Rider already registered for this event" }, 409);
+  }
+  return c.json({ ok: true }, 201);
+});
+
+// GET /api/events/registrations/mine — the family's registrations (auth)
+events.get("/registrations/mine", async (c) => {
+  if (!c.var.user) return c.json({ error: "Authentication required" }, 401);
+  const { results } = await c.env.DB.prepare(
+    `SELECT r.id, r.rider_name, r.race_class, r.status, r.amount_cents,
+            e.slug AS event_slug, e.title AS event_title, e.starts_at
+     FROM registrations r JOIN events e ON e.id = r.event_id
+     WHERE r.user_id = ? ORDER BY e.starts_at ASC`,
+  )
+    .bind(c.var.user.id)
+    .all();
+  return c.json({ registrations: results });
+});
+
 export default events;
