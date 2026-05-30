@@ -19,6 +19,22 @@ const PROMPTS: Record<string, string> = {
     "Atmospheric photograph of a beloved small-town short-track oval racetrack at dusk, empty grandstands and floodlights glowing warm, americana, a place worth protecting, cinematic, moody dark sky with warm amber light, no people, no text, no logos, ultra detailed",
   start:
     "Tense photograph of a motocross start gate moments before the drop, row of riders gripping handlebars, front wheels lined up, dust in the air, dramatic low golden-hour light, anticipation and energy, shallow depth of field, professional sports photography, no text, no logos, ultra detailed",
+
+  // Per-discipline thumbnails for The Grid event cards
+  "disc-motocross":
+    "Action photograph of a motocross rider railing a dirt berm corner with a big rooster tail of dirt roost, knobby tires, dusk golden light, warm amber tones, motion blur, professional motorsport photography, no text, no logos, ultra detailed",
+  "disc-off-road":
+    "Action photograph of an off-road enduro dirt bike rider splashing through a muddy wooded trail, water and mud spray, dappled forest light, warm tones, motion blur, professional motorsport photography, no text, no logos, ultra detailed",
+  "disc-autocross":
+    "Action photograph of a small sports car weaving through an autocross cone course on open tarmac, tire smoke, cones blurred, dynamic low angle, dusk warm light, motion blur, professional motorsport photography, no text, no logos, ultra detailed",
+  "disc-road-race":
+    "Action photograph of an amateur road-racing car hard through a corner on a road course at dusk, curbing and apex, heat haze, warm dark color grade, motion blur, professional motorsport photography, no text, no logos, ultra detailed",
+  "disc-endurance":
+    "Atmospheric photograph of an endurance race car at night with bright headlights on track, pit lane glow in the background, long exposure light streaks, warm and moody, professional motorsport photography, no text, no logos, ultra detailed",
+  "disc-short-track":
+    "Action photograph of a short-track oval stock car sliding through a dirt corner under floodlights, dirt spray, grandstands blurred, warm dramatic night light, motion blur, professional motorsport photography, no text, no logos, ultra detailed",
+  "disc-karting":
+    "Action photograph of a racing kart cornering low to the ground on a kart track, dynamic close low angle, slight motion blur, dusk warm light, professional motorsport photography, no text, no logos, ultra detailed",
 };
 
 const img = new Hono<{ Bindings: Env; Variables: Vars }>();
