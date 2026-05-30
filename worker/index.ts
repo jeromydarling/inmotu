@@ -11,6 +11,9 @@ import meta from "./routes/meta";
 import tower from "./routes/tower";
 import garage from "./routes/garage";
 import img from "./routes/img";
+import ladder from "./routes/ladder";
+import photos from "./routes/photos";
+import yearbook from "./routes/yearbook";
 
 const app = new Hono<{ Bindings: Env; Variables: Vars }>();
 
@@ -29,6 +32,9 @@ api.route("/meta", meta);
 api.route("/tower", tower);
 api.route("/garage", garage);
 api.route("/img", img);
+api.route("/ladder", ladder);
+api.route("/photos", photos);
+api.route("/yearbook", yearbook);
 
 api.notFound((c) => c.json({ error: "Not found" }, 404));
 api.onError((err, c) => {

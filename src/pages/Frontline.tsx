@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { Legislation } from "@shared/types";
 import { Badge, Spinner } from "../components/ui";
+import { MapView, type MapPoint } from "../components/MapView";
 import { useAuth } from "../state/auth";
 
 const statusMeta: Record<string, { tone: any; label: string; pct: number }> = {
@@ -148,6 +149,23 @@ export default function Frontline() {
               Crowdsourced, verified reports of tracks facing development, zoning, or nuisance
               threats. Flag a track to add it to the map.
             </p>
+            {endangered.some((t) => t.lat && t.lng) && (
+              <div className="mb-6">
+                <MapView
+                  height={380}
+                  points={endangered
+                    .filter((t) => t.lat && t.lng)
+                    .map<MapPoint>((t) => ({
+                      lat: t.lat,
+                      lng: t.lng,
+                      title: t.name,
+                      sub: `${t.city}, ${t.state} · ${t.threat_type ?? "threat"}`,
+                      danger: true,
+                      href: `/tracks/${t.slug}`,
+                    }))}
+                />
+              </div>
+            )}
             {endangered.length === 0 ? (
               <p className="text-sm text-white/40">No endangered tracks reported. 🏁</p>
             ) : (

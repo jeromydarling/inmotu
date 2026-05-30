@@ -3,12 +3,14 @@ import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { Track } from "@shared/types";
 import { Badge, Spinner, EmptyState } from "../components/ui";
+import { MapView, type MapPoint } from "../components/MapView";
 import { titleCase } from "../lib/format";
 
 export default function Tracks() {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "endangered">("all");
+  const [view, setView] = useState<"grid" | "map">("grid");
 
   useEffect(() => {
     setLoading(true);
@@ -32,7 +34,7 @@ export default function Tracks() {
         </p>
       </header>
 
-      <div className="mb-6 flex gap-2">
+      <div className="mb-6 flex flex-wrap items-center gap-2">
         {(["all", "endangered"] as const).map((f) => (
           <button
             key={f}
@@ -46,6 +48,19 @@ export default function Tracks() {
             {f === "all" ? "All tracks" : "⚠ Endangered"}
           </button>
         ))}
+        <div className="ml-auto flex gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1">
+          {(["grid", "map"] as const).map((v) => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              className={`rounded-full px-3 py-1 text-xs font-semibold capitalize transition ${
+                view === v ? "bg-ignition text-white" : "text-white/55 hover:text-white"
+              }`}
+            >
+              {v}
+            </button>
+          ))}
+        </div>
       </div>
 
       {loading ? (
@@ -54,6 +69,20 @@ export default function Tracks() {
         </div>
       ) : tracks.length === 0 ? (
         <EmptyState title="No tracks found" />
+      ) : view === "map" ? (
+        <MapView
+          height={560}
+          points={tracks
+            .filter((t) => t.lat && t.lng)
+            .map<MapPoint>((t) => ({
+              lat: t.lat as number,
+              lng: t.lng as number,
+              title: t.name,
+              sub: `${t.city}, ${t.state}`,
+              danger: t.status === "endangered",
+              href: `/tracks/${t.slug}`,
+            }))}
+        />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {tracks.map((t) => (

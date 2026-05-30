@@ -100,6 +100,37 @@ export const api = {
   deleteStint: (id: string) =>
     req<{ ok: true }>(`/garage/stints/${id}`, { method: "DELETE" }),
 
+  // ladder (Road to the Ranch)
+  ladders: () => req<{ ladders: any[] }>("/ladder"),
+  riderLadder: (riderId: string) =>
+    req<{ rider: any; ladder: any; stages: any[] }>(`/ladder/rider/${riderId}`),
+  recordLadder: (body: Record<string, unknown>) =>
+    req<{ ok: true }>("/ladder/progress", { method: "POST", body: JSON.stringify(body) }),
+  clearLadder: (id: string) =>
+    req<{ ok: true }>(`/ladder/progress/${id}`, { method: "DELETE" }),
+
+  // photos
+  photos: (params: Record<string, string> = {}) =>
+    req<{ photos: any[] }>(`/photos?${new URLSearchParams(params)}`),
+  uploadPhoto: (fd: FormData) =>
+    fetch("/api/photos", { method: "POST", credentials: "include", body: fd }).then(async (r) => {
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error((d as any).error || "Upload failed");
+      return d as { photo: any };
+    }),
+  deletePhoto: (id: string) =>
+    req<{ ok: true }>(`/photos/${id}`, { method: "DELETE" }),
+
+  // yearbook
+  yearbooks: () => req<{ orders: any[] }>("/yearbook"),
+  createYearbook: (body: Record<string, unknown>) =>
+    req<{ order: any }>("/yearbook", { method: "POST", body: JSON.stringify(body) }),
+  yearbookCheckout: (id: string) =>
+    req<{ url: string }>(`/yearbook/${id}/checkout`, { method: "POST" }),
+
+  // config
+  config: () => req<{ mapbox_token: string | null; app_url: string }>("/meta/config"),
+
   // meta + billing
   reference: () =>
     req<{ disciplines: any[]; bodies: any[]; regions: string[] }>("/meta/reference"),

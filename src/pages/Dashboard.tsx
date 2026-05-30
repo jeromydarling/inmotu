@@ -7,8 +7,10 @@ import { Badge, EmptyState, Spinner } from "../components/ui";
 import { fmtMoney, titleCase } from "../lib/format";
 import GaragePanel from "./panels/GaragePanel";
 import TowerPanel from "./panels/TowerPanel";
+import LadderPanel from "./panels/LadderPanel";
+import PhotosPanel from "./panels/PhotosPanel";
 
-type Tab = "calendar" | "riders" | "budget" | "garage" | "tower";
+type Tab = "calendar" | "ladder" | "riders" | "photos" | "budget" | "garage" | "tower";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -27,10 +29,12 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <div className="mb-8 flex gap-1 rounded-xl border border-white/[0.06] bg-carbon-900/50 p-1">
+      <div className="mb-8 flex gap-1 overflow-x-auto rounded-xl border border-white/[0.06] bg-carbon-900/50 p-1">
         {([
-          ["calendar", "My Calendar"],
+          ["calendar", "Calendar"],
+          ["ladder", "Ladder"],
           ["riders", "Riders"],
+          ["photos", "Photos"],
           ["budget", "Budget"],
           ["garage", "Garage"],
           ["tower", "Tower"],
@@ -38,7 +42,7 @@ export default function Dashboard() {
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`flex-1 rounded-lg px-4 py-2 text-sm font-semibold transition ${
+            className={`shrink-0 flex-1 rounded-lg px-4 py-2 text-sm font-semibold transition ${
               tab === t ? "bg-ignition text-white shadow-glow" : "text-white/55 hover:text-white"
             }`}
           >
@@ -48,7 +52,9 @@ export default function Dashboard() {
       </div>
 
       {tab === "calendar" && <CalendarTab />}
+      {tab === "ladder" && <LadderPanel />}
       {tab === "riders" && <RidersTab />}
+      {tab === "photos" && <PhotosPanel />}
       {tab === "budget" && <BudgetTab />}
       {tab === "garage" && <GaragePanel />}
       {tab === "tower" && <TowerPanel />}

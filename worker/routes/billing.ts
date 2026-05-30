@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { Env, Vars } from "../types";
 import { requireAuth } from "../auth/middleware";
 import { now } from "../lib/util";
+import { fulfillYearbook } from "./yearbook";
 
 // Billing — Stripe Checkout for subscription tiers.
 // Prices are resolved from env-configured Stripe Price IDs; the handler
@@ -105,6 +106,18 @@ billing.post("/webhook", async (c) => {
 
   const type = event.type as string;
   const obj = (event.data as { object: Record<string, unknown> })?.object ?? {};
+  const meta = (obj.metadata as Record<string, string>) ?? {};
+
+  // One-time yearbook purchases → fulfill via Lulu.
+  if (type === "checkout.session.completed" && meta.type === "yearbook" && meta.order_id) {
+    await c.env.DB.prepare(
+      "UPDATE yearbook_orders SET stripe_session_id = ?, updated_at = ? WHERE id = ?",
+    )
+      .bind(obj.id as string, now(), meta.order_id)
+      .run();
+    c.executionCtx.waitUntil(fulfillYearbook(c.env, meta.order_id));
+    return c.json({ received: true });
+  }
 
   if (type === "checkout.session.completed" || type?.startsWith("customer.subscription")) {
     const userId = (obj.metadata as Record<string, string>)?.user_id;

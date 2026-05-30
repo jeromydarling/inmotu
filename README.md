@@ -88,6 +88,28 @@ Then add a webhook endpoint in the Stripe dashboard pointing at
 `customer.subscription.*`). Until the secret key is set, checkout returns a
 clean "not configured" message instead of erroring.
 
+### Maps (Mapbox)
+
+The endangered-tracks defense map and the track-directory map use Mapbox GL.
+Add a **publishable** token (`pk.…`) as `MAPBOX_TOKEN` in `wrangler.jsonc` vars
+(or a secret). Until set, maps render an on-brand list fallback. Mapbox JS is
+code-split and only loads when a map is shown.
+
+### Season Yearbook (Lulu Print)
+
+Parents order a printed photo book of their racer's season ($59 one-time). The
+Stripe product/price already exist (`STRIPE_PRICE_YEARBOOK`). To enable print
+fulfillment, set Lulu credentials (`LULU_ENV` var = `sandbox`|`production`):
+
+```bash
+npx wrangler secret put LULU_CLIENT_KEY
+npx wrangler secret put LULU_CLIENT_SECRET
+```
+
+On payment the webhook calls `fulfillYearbook()`, which authenticates with Lulu
+and — once the book-PDF pipeline lands — creates the print job. Without keys,
+paid orders are held at status `paid`; the purchase still succeeds.
+
 ## Scripts
 
 | Script | Does |
@@ -100,13 +122,16 @@ clean "not configured" message instead of erroring.
 
 ## Project status
 
-All five modules are built and tested end-to-end:
+Built and tested end-to-end:
 
 - **The Grid** — event aggregator, filters, save-to-calendar, .ics export, registration
-- **The Pit Board** — multi-rider family hub, budget tracker
+- **The Pit Board** — multi-rider family hub, budget tracker, **photo timeline**
+- **Road to the Ranch** — live qualifying-ladder tracker (Area → Regional → National)
 - **The Tower** — operator event publishing, registrations, economic-impact reports
 - **The Garage** — setup database + endurance stint planner
-- **The Frontline** — Right to Race bill tracker, one-tap legislator contact
+- **The Frontline** — Right to Race bill tracker, one-tap legislator contact, **endangered-tracks map**
+- **Tracks** — directory + **Mapbox map view**
+- **Season Yearbook** — printed photo book via Stripe + Lulu (fulfillment behind keys)
 
-Plus first-party auth (PBKDF2 + KV sessions) and Stripe subscription billing
-(live products/prices created; set the secret key to switch on checkout).
+Plus first-party auth (PBKDF2 + KV sessions) and Stripe billing (live
+subscription + yearbook products; set the secret key to switch on checkout).

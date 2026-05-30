@@ -8,10 +8,16 @@ export interface Env {
   AI: Ai;
   APP_ENV: string;
   APP_URL: string;
+  // Public-ish config (vars):
+  MAPBOX_TOKEN?: string; // publishable pk.* token for map tiles
+  STRIPE_PRICE_YEARBOOK?: string;
+  LULU_ENV?: string; // 'sandbox' | 'production'
   // Secrets (set via `wrangler secret put`):
   SESSION_SECRET?: string;
   STRIPE_SECRET_KEY?: string;
   STRIPE_WEBHOOK_SECRET?: string;
+  LULU_CLIENT_KEY?: string;
+  LULU_CLIENT_SECRET?: string;
 }
 
 // Hono context variables
