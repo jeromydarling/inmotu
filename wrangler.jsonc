@@ -4,6 +4,13 @@
   "main": "worker/index.ts",
   "compatibility_date": "2025-05-01",
   "compatibility_flags": ["nodejs_compat"],
+  // Builds the React SPA into ./dist/client before bundling/deploying the
+  // Worker. This runs automatically on `wrangler deploy` (and in Cloudflare
+  // Workers Builds), so the deploy succeeds even when no separate build
+  // command is configured in the dashboard.
+  "build": {
+    "command": "npm run build"
+  },
   "assets": {
     "directory": "./dist/client",
     "binding": "ASSETS",
