@@ -80,13 +80,16 @@ them once and live billing is on:
 
 ```bash
 npx wrangler secret put STRIPE_SECRET_KEY      # sk_live_…
-npx wrangler secret put STRIPE_WEBHOOK_SECRET  # whsec_…
+npx wrangler secret put STRIPE_WEBHOOK_SECRET  # whsec_… (REQUIRED for the webhook)
 ```
 
 Then add a webhook endpoint in the Stripe dashboard pointing at
 `https://inmotu.pro/api/billing/webhook` (events: `checkout.session.completed`,
-`customer.subscription.*`). Until the secret key is set, checkout returns a
-clean "not configured" message instead of erroring.
+`customer.subscription.*`). The webhook **verifies the `Stripe-Signature`
+HMAC** and fails closed: without `STRIPE_WEBHOOK_SECRET` set, all webhook
+calls are rejected (so a forged POST can't grant entitlements). Until the
+secret key is set, checkout returns a clean "not configured" message instead
+of erroring.
 
 ### Maps (Mapbox)
 

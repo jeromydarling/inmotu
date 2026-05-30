@@ -9,11 +9,14 @@ export default function LadderPanel() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.riders().then((r) => {
-      setRiders(r.riders);
-      setActive(r.riders[0]?.id ?? null);
-      setLoading(false);
-    });
+    api
+      .riders()
+      .then((r) => {
+        setRiders(r.riders);
+        setActive(r.riders[0]?.id ?? null);
+      })
+      .catch(() => setRiders([]))
+      .finally(() => setLoading(false));
   }, []);
 
   if (loading) return <Spinner className="mx-auto h-8 w-8" />;

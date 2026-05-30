@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { api } from "../api/client";
+import { useEffect, useRef } from "react";
+import { useConfig } from "../state/config";
 
 export interface MapPoint {
   lat: number;
@@ -31,11 +31,7 @@ export function MapView({
   height?: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [token, setToken] = useState<string | null | undefined>(undefined);
-
-  useEffect(() => {
-    api.config().then((c) => setToken(c.mapbox_token || null)).catch(() => setToken(null));
-  }, []);
+  const { mapboxToken: token, loaded } = useConfig();
 
   useEffect(() => {
     if (!token || !ref.current || points.length === 0) return;
@@ -93,7 +89,7 @@ export function MapView({
     };
   }, [token, points]);
 
-  if (token === null) {
+  if (loaded && !token) {
     // No token configured — graceful, on-brand fallback list.
     return (
       <div className={`panel p-5 ${className}`} style={{ minHeight: height }}>

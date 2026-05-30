@@ -1,15 +1,12 @@
 import { Hono } from "hono";
 import type { Env, Vars } from "../types";
 import { ingestEvents, ingestFromFeeds, type FeedEvent } from "../ingest";
+import { requireRole } from "../auth/middleware";
 
 // Admin tools — manual event ingestion (same engine the Cron Trigger runs).
 const admin = new Hono<{ Bindings: Env; Variables: Vars }>();
 
-admin.use("*", async (c, next) => {
-  if (!c.var.user || c.var.user.role !== "admin")
-    return c.json({ error: "Admin only" }, 403);
-  await next();
-});
+admin.use("*", requireRole("admin"));
 
 // Import events directly, or kick the configured feeds.
 admin.post("/ingest", async (c) => {

@@ -2,6 +2,8 @@ import { Hono } from "hono";
 import type { Env, Vars } from "../types";
 import { requireAuth } from "../auth/middleware";
 import { now, uid } from "../lib/util";
+import { err } from "../lib/http";
+import { stripe, StripeError } from "../lib/stripe";
 
 // Season Yearbook — a printed photo book of a rider's year, fulfilled via the
 // Lulu Print API. Revenue stream: parents order at season's end.
@@ -62,16 +64,13 @@ yearbook.post("/:id/checkout", async (c) => {
   )
     .bind(id, c.var.user!.id)
     .first<Record<string, any>>();
-  if (!order) return c.json({ error: "Order not found" }, 404);
+  if (!order) return err(c, "not_found", "Order not found");
 
-  const key = c.env.STRIPE_SECRET_KEY;
-  if (!key) {
-    return c.json(
-      {
-        error: "billing_not_configured",
-        message: "Set STRIPE_SECRET_KEY (and STRIPE_PRICE_YEARBOOK) to enable yearbook checkout.",
-      },
-      503,
+  if (!c.env.STRIPE_SECRET_KEY) {
+    return err(
+      c,
+      "billing_not_configured",
+      "Set STRIPE_SECRET_KEY (and STRIPE_PRICE_YEARBOOK) to enable yearbook checkout.",
     );
   }
 
@@ -94,58 +93,14 @@ yearbook.post("/:id/checkout", async (c) => {
     params["line_items[0][quantity]"] = "1";
   }
 
-  const res = (await fetch("https://api.stripe.com/v1/checkout/sessions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams(params),
-  }).then((r) => r.json())) as Record<string, unknown>;
-
-  return c.json({ url: res.url });
+  try {
+    const session = await stripe<{ url?: string }>(c.env, "checkout/sessions", params);
+    if (!session.url) return err(c, "internal", "Stripe did not return a checkout URL");
+    return c.json({ url: session.url });
+  } catch (e) {
+    if (e instanceof StripeError) return err(c, "internal", e.message);
+    throw e;
+  }
 });
 
 export default yearbook;
-
-/* ──────────────────────────────────────────────────────────────────────
- * Lulu Print API fulfillment. Called from the Stripe webhook on payment.
- * Authenticates with client credentials, then creates a print-job. Requires
- * a print-ready interior + cover PDF (generated from the rider's photos —
- * that PDF pipeline is the remaining build step). Degrades gracefully: if
- * credentials or PDFs are absent, the order is marked 'paid' and held for
- * fulfillment rather than failing the purchase.
- * ──────────────────────────────────────────────────────────────────────── */
-export async function fulfillYearbook(env: Env, orderId: string): Promise<void> {
-  await env.DB.prepare(
-    "UPDATE yearbook_orders SET status = 'paid', updated_at = ? WHERE id = ?",
-  )
-    .bind(now(), orderId)
-    .run();
-
-  if (!env.LULU_CLIENT_KEY || !env.LULU_CLIENT_SECRET) return; // held for fulfillment
-
-  try {
-    const base = env.LULU_ENV === "production" ? "https://api.lulu.com" : "https://api.sandbox.lulu.com";
-    const tokenRes = (await fetch(`${base}/auth/realms/glasstree/protocol/openid-connect/token`, {
-      method: "POST",
-      headers: {
-        Authorization: "Basic " + btoa(`${env.LULU_CLIENT_KEY}:${env.LULU_CLIENT_SECRET}`),
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({ grant_type: "client_credentials" }),
-    }).then((r) => r.json())) as { access_token?: string };
-    if (!tokenRes.access_token) return;
-
-    // NOTE: interior_pdf / cover URLs come from the generated book PDF
-    // (next build step). Once available, create the print job:
-    // await fetch(`${base}/print-jobs/`, { method: 'POST', headers: { Authorization: `Bearer ${tokenRes.access_token}` }, body: JSON.stringify({ line_items: [...], shipping_address: {...}, contact_email }) })
-    await env.DB.prepare(
-      "UPDATE yearbook_orders SET status = 'submitted', updated_at = ? WHERE id = ?",
-    )
-      .bind(now(), orderId)
-      .run();
-  } catch (err) {
-    console.error("lulu fulfillment error", err);
-  }
-}

@@ -29,6 +29,15 @@ export const requireAuth: MiddlewareHandler<{
   Bindings: Env;
   Variables: Vars;
 }> = async (c, next) => {
-  if (!c.var.user) return c.json({ error: "Authentication required" }, 401);
+  if (!c.var.user) return c.json({ error: "unauthorized", message: "Authentication required" }, 401);
   await next();
 };
+
+/** Guards routes that require a specific role (e.g. "admin"). */
+export const requireRole =
+  (role: "operator" | "admin"): MiddlewareHandler<{ Bindings: Env; Variables: Vars }> =>
+  async (c, next) => {
+    if (!c.var.user) return c.json({ error: "unauthorized" }, 401);
+    if (c.var.user.role !== role) return c.json({ error: "forbidden", message: `${role} only` }, 403);
+    await next();
+  };

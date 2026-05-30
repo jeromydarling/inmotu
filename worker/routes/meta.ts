@@ -27,7 +27,12 @@ meta.get("/config", (c) =>
   }),
 );
 
+// Approximate marketing counters for the (public, high-traffic) landing page.
+// Cached in KV for 60s so the four COUNT scans don't run on every hit.
 meta.get("/stats", async (c) => {
+  const cached = await c.env.SESSIONS.get("stats:landing");
+  if (cached) return c.json({ stats: JSON.parse(cached) });
+
   const row = await c.env.DB.prepare(
     `SELECT
        (SELECT COUNT(*) FROM events WHERE starts_at >= unixepoch() - 86400) AS upcoming_events,
@@ -35,6 +40,9 @@ meta.get("/stats", async (c) => {
        (SELECT COUNT(*) FROM legislation WHERE status IN ('introduced','committee','passed')) AS active_bills,
        (SELECT COUNT(*) FROM legislation WHERE status = 'enacted') AS enacted_bills`,
   ).first();
+  c.executionCtx.waitUntil(
+    c.env.SESSIONS.put("stats:landing", JSON.stringify(row), { expirationTtl: 60 }),
+  );
   return c.json({ stats: row });
 });
 

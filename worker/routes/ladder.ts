@@ -2,6 +2,8 @@ import { Hono } from "hono";
 import type { Env, Vars } from "../types";
 import { requireAuth } from "../auth/middleware";
 import { now, uid } from "../lib/util";
+import { ownsRider } from "../db";
+import { err } from "../lib/http";
 
 // Road to the Ranch — the qualifying-ladder tracker.
 const ladder = new Hono<{ Bindings: Env; Variables: Vars }>();
@@ -63,14 +65,9 @@ ladder.post("/progress", async (c) => {
   const b = await c.req.json().catch(() => ({}));
   const { rider_id, stage_id } = b ?? {};
   if (!rider_id || !stage_id)
-    return c.json({ error: "rider_id and stage_id required" }, 400);
+    return err(c, "validation", "rider_id and stage_id required");
 
-  const owns = await c.env.DB.prepare(
-    "SELECT 1 FROM riders WHERE id = ? AND user_id = ?",
-  )
-    .bind(rider_id, c.var.user!.id)
-    .first();
-  if (!owns) return c.json({ error: "Rider not found" }, 404);
+  if (!(await ownsRider(c.env, rider_id, c.var.user!.id))) return err(c, "not_found", "Rider not found");
 
   const result_pos = b.result_pos != null ? Number(b.result_pos) : null;
   // Top-6 advances in most AMA area/regional formats — sensible default.

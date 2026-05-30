@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import type { Legislation } from "@shared/types";
 import { Badge, Spinner } from "../components/ui";
 import { MapView, type MapPoint } from "../components/MapView";
 import { useAuth } from "../state/auth";
+import { useToast } from "../state/toast";
 
 const statusMeta: Record<string, { tone: any; label: string; pct: number }> = {
   enacted: { tone: "green", label: "Enacted", pct: 100 },
@@ -16,6 +17,8 @@ const statusMeta: Record<string, { tone: any; label: string; pct: number }> = {
 
 export default function Frontline() {
   const { user } = useAuth();
+  const nav = useNavigate();
+  const toast = useToast();
   const [bills, setBills] = useState<Legislation[]>([]);
   const [endangered, setEndangered] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,22 +29,28 @@ export default function Frontline() {
         setBills(l.legislation);
         setEndangered(e.tracks);
       })
+      .catch(() => toast.error("Couldn't load the bill tracker. Refresh to retry."))
       .finally(() => setLoading(false));
   }, []);
 
   async function pledge(b: Legislation) {
     if (!user) {
-      window.location.href = "/login";
+      nav("/login", { state: { from: "/frontline" } });
       return;
     }
+    if (b.supported) return;
+    const snapshot = bills;
     setBills((prev) =>
       prev.map((x) =>
-        x.id === b.id
-          ? { ...x, supported: true, supporters: (x.supporters ?? 0) + (x.supported ? 0 : 1) }
-          : x,
+        x.id === b.id ? { ...x, supported: true, supporters: (x.supporters ?? 0) + 1 } : x,
       ),
     );
-    await api.support("pledge", "legislation", b.id).catch(() => {});
+    try {
+      await api.support("pledge", "legislation", b.id);
+    } catch {
+      setBills(snapshot); // roll back on failure
+      toast.error("Couldn't record your pledge. Try again.");
+    }
   }
 
   function contactRep(b: Legislation) {

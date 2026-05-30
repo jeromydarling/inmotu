@@ -65,10 +65,20 @@ app.all("*", (c) => c.env.ASSETS.fetch(c.req.raw));
 
 export default {
   fetch: app.fetch,
-  // Cron Trigger — pull configured event feeds into The Grid daily.
+  // Cron Trigger (daily): pull event feeds into The Grid, and reap demo
+  // accounts older than 7 days (children cascade via FKs).
   async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext) {
     ctx.waitUntil(
-      ingestFromFeeds(env).then((r) => console.log("ingest run", JSON.stringify(r))),
+      (async () => {
+        const ingest = await ingestFromFeeds(env);
+        const cutoff = Math.floor(Date.now() / 1000) - 7 * 24 * 60 * 60;
+        const reap = await env.DB.prepare(
+          "DELETE FROM users WHERE is_demo = 1 AND created_at < ?",
+        )
+          .bind(cutoff)
+          .run();
+        console.log("cron run", JSON.stringify({ ingest, demoReaped: reap.meta.changes }));
+      })(),
     );
   },
 };

@@ -1,6 +1,8 @@
 import { Hono } from "hono";
 import type { Env, Vars } from "../types";
 import { now, uid } from "../lib/util";
+import { requireAuth } from "../auth/middleware";
+import { err } from "../lib/http";
 
 const events = new Hono<{ Bindings: Env; Variables: Vars }>();
 
@@ -81,34 +83,25 @@ events.get("/:slug", async (c) => {
   return c.json({ event: { ...e, saved } });
 });
 
-// POST /api/events/:id/save — toggle save (auth)
-events.post("/:id/save", async (c) => {
-  if (!c.var.user) return c.json({ error: "Authentication required" }, 401);
+// POST /api/events/:id/save — toggle save (auth). Atomic: INSERT OR IGNORE,
+// then if nothing was inserted the row already existed → DELETE (unsave).
+events.post("/:id/save", requireAuth, async (c) => {
   const id = c.req.param("id");
-  const exists = await c.env.DB.prepare(
-    "SELECT 1 FROM saved_events WHERE user_id = ? AND event_id = ?",
+  const ins = await c.env.DB.prepare(
+    "INSERT OR IGNORE INTO saved_events (user_id, event_id, reminder, created_at) VALUES (?, ?, 1, ?)",
   )
-    .bind(c.var.user.id, id)
-    .first();
-  if (exists) {
-    await c.env.DB.prepare(
-      "DELETE FROM saved_events WHERE user_id = ? AND event_id = ?",
-    )
-      .bind(c.var.user.id, id)
-      .run();
-    return c.json({ saved: false });
-  }
-  await c.env.DB.prepare(
-    "INSERT INTO saved_events (user_id, event_id, reminder, created_at) VALUES (?, ?, 1, ?)",
-  )
-    .bind(c.var.user.id, id, now())
+    .bind(c.var.user!.id, id, now())
     .run();
-  return c.json({ saved: true });
+  if (ins.meta.changes > 0) return c.json({ saved: true });
+
+  await c.env.DB.prepare("DELETE FROM saved_events WHERE user_id = ? AND event_id = ?")
+    .bind(c.var.user!.id, id)
+    .run();
+  return c.json({ saved: false });
 });
 
 // GET /api/events/saved/mine — user's calendar
-events.get("/saved/mine", async (c) => {
-  if (!c.var.user) return c.json({ error: "Authentication required" }, 401);
+events.get("/saved/mine", requireAuth, async (c) => {
   const { results } = await c.env.DB.prepare(
     `SELECT e.*, t.name AS track_name, t.city AS track_city, t.state AS track_state
      FROM saved_events s
@@ -116,25 +109,24 @@ events.get("/saved/mine", async (c) => {
      LEFT JOIN tracks t ON t.id = e.track_id
      WHERE s.user_id = ? ORDER BY e.starts_at ASC`,
   )
-    .bind(c.var.user.id)
+    .bind(c.var.user!.id)
     .all();
   return c.json({ events: results.map((e) => ({ ...e, saved: true })) });
 });
 
 // POST /api/events/:id/register — a family registers a rider (auth)
-events.post("/:id/register", async (c) => {
-  if (!c.var.user) return c.json({ error: "Authentication required" }, 401);
+events.post("/:id/register", requireAuth, async (c) => {
   const id = c.req.param("id");
   const b = await c.req.json().catch(() => ({}));
   if (typeof b.rider_name !== "string" || !b.rider_name.trim())
-    return c.json({ error: "rider_name required" }, 400);
+    return err(c, "validation", "rider_name required");
 
   const ev = await c.env.DB.prepare(
     "SELECT id, entry_fee_cents FROM events WHERE id = ?",
   )
     .bind(id)
     .first<{ id: string; entry_fee_cents: number | null }>();
-  if (!ev) return c.json({ error: "Event not found" }, 404);
+  if (!ev) return err(c, "not_found", "Event not found");
 
   try {
     await c.env.DB.prepare(
@@ -144,7 +136,7 @@ events.post("/:id/register", async (c) => {
       .bind(
         uid("reg_"),
         id,
-        c.var.user.id,
+        c.var.user!.id,
         b.rider_id ?? null,
         b.rider_name.trim(),
         b.race_class ?? null,
@@ -154,21 +146,20 @@ events.post("/:id/register", async (c) => {
       )
       .run();
   } catch {
-    return c.json({ error: "Rider already registered for this event" }, 409);
+    return err(c, "conflict", "Rider already registered for this event");
   }
   return c.json({ ok: true }, 201);
 });
 
 // GET /api/events/registrations/mine — the family's registrations (auth)
-events.get("/registrations/mine", async (c) => {
-  if (!c.var.user) return c.json({ error: "Authentication required" }, 401);
+events.get("/registrations/mine", requireAuth, async (c) => {
   const { results } = await c.env.DB.prepare(
     `SELECT r.id, r.rider_name, r.race_class, r.status, r.amount_cents,
             e.slug AS event_slug, e.title AS event_title, e.starts_at
      FROM registrations r JOIN events e ON e.id = r.event_id
      WHERE r.user_id = ? ORDER BY e.starts_at ASC`,
   )
-    .bind(c.var.user.id)
+    .bind(c.var.user!.id)
     .all();
   return c.json({ registrations: results });
 });

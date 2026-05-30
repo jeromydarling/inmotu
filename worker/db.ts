@@ -28,3 +28,32 @@ export async function getUserById(
     .first<Record<string, unknown>>();
   return row ? toPublicUser(row) : null;
 }
+
+/** Generic ownership check: does row `id` in `table` belong to `ownerId`? */
+export async function owns(
+  env: Env,
+  table: "events" | "series",
+  ownerCol: "operator_id" | "user_id",
+  id: string,
+  ownerId: string,
+): Promise<boolean> {
+  const row = await env.DB.prepare(
+    `SELECT 1 FROM ${table} WHERE id = ? AND ${ownerCol} = ?`,
+  )
+    .bind(id, ownerId)
+    .first();
+  return !!row;
+}
+
+/** Does rider `riderId` belong to family account `userId`? */
+export async function ownsRider(env: Env, riderId: string, userId: string): Promise<boolean> {
+  const row = await env.DB.prepare("SELECT 1 FROM riders WHERE id = ? AND user_id = ?")
+    .bind(riderId, userId)
+    .first();
+  return !!row;
+}
+
+export const ownsEvent = (env: Env, eventId: string, userId: string) =>
+  owns(env, "events", "operator_id", eventId, userId);
+export const ownsSeries = (env: Env, seriesId: string, userId: string) =>
+  owns(env, "series", "operator_id", seriesId, userId);

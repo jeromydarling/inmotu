@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
 import { api } from "../../api/client";
 import { Badge, EmptyState, Spinner } from "../../components/ui";
-import { fmtMoney, fmtDate } from "../../lib/format";
+import { fmtMoney, fmtDate, safeParse } from "../../lib/format";
+
+interface Deliverable {
+  text: string;
+  done: boolean;
+}
 
 const tierTone: Record<string, any> = { title: "live", associate: "amber", contingency: "muted" };
 
@@ -32,7 +37,7 @@ export default function SponsorsPanel() {
     load();
   }
   async function toggleDeliverable(s: any, idx: number) {
-    const d = JSON.parse(s.deliverables || "[]");
+    const d = safeParse<Deliverable[]>(s.deliverables, []);
     d[idx].done = !d[idx].done;
     setSponsors((p) => p.map((x) => (x.id === s.id ? { ...x, deliverables: JSON.stringify(d) } : x)));
     await api.updateSponsor(s.id, { deliverables: d }).catch(load);
@@ -73,7 +78,7 @@ export default function SponsorsPanel() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {sponsors.map((s) => {
-            const deliverables = JSON.parse(s.deliverables || "[]");
+            const deliverables = safeParse<Deliverable[]>(s.deliverables, []);
             return (
               <div key={s.id} className="panel p-5">
                 <div className="flex items-start justify-between">
@@ -88,7 +93,7 @@ export default function SponsorsPanel() {
                 </div>
                 {deliverables.length > 0 && (
                   <div className="mt-3 space-y-1.5">
-                    {deliverables.map((d: any, i: number) => (
+                    {deliverables.map((d: Deliverable, i: number) => (
                       <label key={i} className="flex items-center gap-2 text-sm text-white/65">
                         <input type="checkbox" checked={!!d.done} onChange={() => toggleDeliverable(s, i)} />
                         <span className={d.done ? "text-white/40 line-through" : ""}>{d.text}</span>

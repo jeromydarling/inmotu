@@ -68,3 +68,28 @@ function timingSafeEqual(a: string, b: string): boolean {
 export function isEmail(v: unknown): v is string {
   return typeof v === "string" && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
 }
+
+/**
+ * Single slugify used everywhere. `unique:true` appends a short uid-derived
+ * (crypto-random) suffix for collision-free, non-deterministic slugs; omit it
+ * for deterministic slugs (e.g. idempotent feed ingestion).
+ */
+export function slugify(s: string, opts: { maxLen?: number; unique?: boolean } = {}): string {
+  const { maxLen = 60, unique = false } = opts;
+  const base = s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, maxLen);
+  return unique ? `${base}-${uid().slice(0, 6)}` : base;
+}
+
+/** Safe JSON parse with a typed fallback (never throws). */
+export function parseJson<T>(s: string | null | undefined, fallback: T): T {
+  if (!s) return fallback;
+  try {
+    return JSON.parse(s) as T;
+  } catch {
+    return fallback;
+  }
+}

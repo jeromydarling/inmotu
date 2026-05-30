@@ -2,6 +2,8 @@ import { Hono } from "hono";
 import type { Env, Vars } from "../types";
 import { requireAuth } from "../auth/middleware";
 import { now, uid } from "../lib/util";
+import { ownsRider } from "../db";
+import { err } from "../lib/http";
 
 // Maintenance log — service tracker per rider/bike (affordability + reliability).
 const maintenance = new Hono<{ Bindings: Env; Variables: Vars }>();
@@ -25,11 +27,8 @@ maintenance.get("/", async (c) => {
 maintenance.post("/", async (c) => {
   const b = await c.req.json().catch(() => ({}));
   if (!b.rider_id || typeof b.item !== "string" || !b.item.trim())
-    return c.json({ error: "rider_id and item required" }, 400);
-  const owns = await c.env.DB.prepare("SELECT 1 FROM riders WHERE id = ? AND user_id = ?")
-    .bind(b.rider_id, c.var.user!.id)
-    .first();
-  if (!owns) return c.json({ error: "Rider not found" }, 404);
+    return err(c, "validation", "rider_id and item required");
+  if (!(await ownsRider(c.env, b.rider_id, c.var.user!.id))) return err(c, "not_found", "Rider not found");
 
   const id = uid("mnt_");
   await c.env.DB.prepare(

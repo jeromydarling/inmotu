@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api/client";
-import { Badge, EmptyState, Spinner } from "../components/ui";
+import { Badge, EmptyState, Spinner, Pill } from "../components/ui";
 import { Reveal } from "../components/motion";
 import { titleCase } from "../lib/format";
 
@@ -87,13 +87,5 @@ export default function Rules() {
         </div>
       )}
     </div>
-  );
-}
-
-function Pill({ children, active, onClick }: { children: React.ReactNode; active: boolean; onClick: () => void }) {
-  return (
-    <button onClick={onClick} className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition ${active ? "border-ignition/50 bg-ignition/15 text-ignition-300" : "border-white/10 bg-white/[0.03] text-white/55 hover:text-white"}`}>
-      {children}
-    </button>
   );
 }

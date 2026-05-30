@@ -43,6 +43,29 @@ export function EmptyState({ title, hint }: { title: string; hint?: string }) {
   );
 }
 
+export function Pill({
+  children,
+  active,
+  onClick,
+}: {
+  children: ReactNode;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition ${
+        active
+          ? "border-ignition/50 bg-ignition/15 text-ignition-300"
+          : "border-white/10 bg-white/[0.03] text-white/55 hover:text-white"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
 export function Stat({ value, label }: { value: ReactNode; label: string }) {
   return (
     <div>

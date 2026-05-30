@@ -2,15 +2,21 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./state/auth";
+import { ToastProvider } from "./state/toast";
+import { ConfigProvider } from "./state/config";
 import App from "./App";
 import "./index.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
+      <ToastProvider>
+        <ConfigProvider>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </ConfigProvider>
+      </ToastProvider>
     </BrowserRouter>
   </StrictMode>,
 );

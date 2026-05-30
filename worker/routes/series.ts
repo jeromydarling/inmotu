@@ -1,7 +1,9 @@
 import { Hono } from "hono";
 import type { Env, Vars } from "../types";
 import { requireAuth } from "../auth/middleware";
-import { now, uid } from "../lib/util";
+import { now, uid, slugify } from "../lib/util";
+import { ownsEvent, ownsSeries } from "../db";
+import { err } from "../lib/http";
 
 // Series points & standings. Public read; operators manage their own series.
 const series = new Hono<{ Bindings: Env; Variables: Vars }>();
@@ -9,10 +11,6 @@ const series = new Hono<{ Bindings: Env; Variables: Vars }>();
 // Standard points-by-position table (MX/club style); linear fallback after 20.
 const POINTS = [0, 25, 22, 20, 18, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
 const pointsFor = (pos: number) => (pos >= 1 && pos < POINTS.length ? POINTS[pos] : 1);
-
-function slugify(s: string) {
-  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 50) + "-" + Math.random().toString(36).slice(2, 5);
-}
 
 // Public: list series
 series.get("/", async (c) => {
@@ -38,7 +36,7 @@ series.get("/:slug/standings", async (c) => {
      FROM results r
      WHERE r.event_id IN (SELECT event_id FROM series_events WHERE series_id = ?)
      GROUP BY r.competitor, r.race_class
-     ORDER BY points DESC`,
+     ORDER BY points DESC LIMIT 250`,
   )
     .bind(s.id)
     .all();
@@ -56,7 +54,7 @@ series.post("/", async (c) => {
     `INSERT INTO series (id, slug, name, discipline, season, operator_id, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?)`,
   )
-    .bind(id, slugify(b.name), b.name, b.discipline ?? null, Number(b.season) || new Date().getFullYear(), c.var.user!.id, now())
+    .bind(id, slugify(b.name, { maxLen: 50, unique: true }), b.name, b.discipline ?? null, Number(b.season) || new Date().getFullYear(), c.var.user!.id, now())
     .run();
   const row = await c.env.DB.prepare("SELECT * FROM series WHERE id = ?").bind(id).first();
   return c.json({ series: row }, 201);
@@ -75,11 +73,8 @@ series.get("/mine/list", async (c) => {
 // Operator: attach one of their events to a series as a round.
 series.post("/:id/rounds", async (c) => {
   const b = await c.req.json().catch(() => ({}));
-  const owns = await c.env.DB.prepare("SELECT 1 FROM series WHERE id = ? AND operator_id = ?")
-    .bind(c.req.param("id"), c.var.user!.id)
-    .first();
-  if (!owns) return c.json({ error: "Not found" }, 404);
-  if (!b.event_id) return c.json({ error: "event_id required" }, 400);
+  if (!(await ownsSeries(c.env, c.req.param("id"), c.var.user!.id))) return err(c, "not_found");
+  if (!b.event_id) return err(c, "validation", "event_id required");
   await c.env.DB.prepare(
     "INSERT OR IGNORE INTO series_events (series_id, event_id) VALUES (?, ?)",
   )
@@ -91,13 +86,10 @@ series.post("/:id/rounds", async (c) => {
 // Operator: post results for one of their events (auto-computes points).
 series.post("/results/:eventId", async (c) => {
   const eventId = c.req.param("eventId");
-  const owns = await c.env.DB.prepare("SELECT 1 FROM events WHERE id = ? AND operator_id = ?")
-    .bind(eventId, c.var.user!.id)
-    .first();
-  if (!owns) return c.json({ error: "Event not found" }, 404);
+  if (!(await ownsEvent(c.env, eventId, c.var.user!.id))) return err(c, "not_found", "Event not found");
   const b = await c.req.json().catch(() => ({}));
   const entries: any[] = Array.isArray(b.results) ? b.results : [];
-  if (entries.length === 0) return c.json({ error: "results[] required" }, 400);
+  if (entries.length === 0) return err(c, "validation", "results[] required");
 
   // replace existing results for this event
   await c.env.DB.prepare("DELETE FROM results WHERE event_id = ?").bind(eventId).run();

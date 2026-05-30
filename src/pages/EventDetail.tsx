@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { Badge, Spinner } from "../components/ui";
 import { fmtDate, fmtMoney, daysUntil, titleCase } from "../lib/format";
@@ -8,6 +8,7 @@ import { useAuth } from "../state/auth";
 export default function EventDetail() {
   const { slug } = useParams();
   const { user } = useAuth();
+  const nav = useNavigate();
   const [e, setE] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -22,7 +23,7 @@ export default function EventDetail() {
 
   async function toggleSave() {
     if (!user) {
-      window.location.href = "/login";
+      nav("/login", { state: { from: `/events/${slug}` } });
       return;
     }
     setE((p: any) => ({ ...p, saved: !p.saved }));

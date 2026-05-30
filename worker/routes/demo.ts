@@ -10,7 +10,14 @@ const demo = new Hono<{ Bindings: Env; Variables: Vars }>();
 
 demo.post("/", async (c) => {
   const b = await c.req.json().catch(() => ({}));
-  if (!isEmail(b.email)) return c.json({ error: "Valid email required" }, 400);
+  if (!isEmail(b.email)) return c.json({ error: "validation", message: "Valid email required" }, 400);
+
+  // Rate-limit by IP (KV counter, 1h window) to stop demo-account flooding.
+  const ip = c.req.header("CF-Connecting-IP") ?? "unknown";
+  const rlKey = `demo_rl:${ip}`;
+  const count = Number((await c.env.SESSIONS.get(rlKey)) ?? "0");
+  if (count >= 5) return c.json({ error: "rate_limited", message: "Too many demo requests. Try again later." }, 429);
+  await c.env.SESSIONS.put(rlKey, String(count + 1), { expirationTtl: 3600 });
 
   const ts = now();
   const userId = uid("usr_");

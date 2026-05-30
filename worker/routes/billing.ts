@@ -2,7 +2,9 @@ import { Hono } from "hono";
 import type { Env, Vars } from "../types";
 import { requireAuth } from "../auth/middleware";
 import { now } from "../lib/util";
-import { fulfillYearbook } from "./yearbook";
+import { err } from "../lib/http";
+import { stripe, StripeError, verifyStripeWebhook } from "../lib/stripe";
+import { fulfillYearbook } from "../lib/lulu";
 
 // Billing — Stripe Checkout for subscription tiers.
 // Prices are resolved from env-configured Stripe Price IDs; the handler
@@ -17,91 +19,73 @@ export const PLANS = {
 
 billing.get("/plans", (c) =>
   c.json({
-    plans: Object.entries(PLANS).map(([id, p]) => ({
-      id,
-      label: p.label,
-      price: p.price,
-    })),
+    plans: Object.entries(PLANS).map(([id, p]) => ({ id, label: p.label, price: p.price })),
   }),
 );
 
 billing.post("/checkout", requireAuth, async (c) => {
   const { plan } = await c.req.json().catch(() => ({}));
-  if (!plan || !(plan in PLANS))
-    return c.json({ error: "Unknown plan" }, 400);
+  if (!plan || !(plan in PLANS)) return err(c, "validation", "Unknown plan");
 
-  const key = c.env.STRIPE_SECRET_KEY;
   const priceId = (c.env as unknown as Record<string, string | undefined>)[
     PLANS[plan as keyof typeof PLANS].priceIdVar
   ];
-
-  if (!key || !priceId) {
-    // Stripe not configured — surface a clear, non-fatal signal to the UI.
-    return c.json(
-      {
-        error: "billing_not_configured",
-        message:
-          "Stripe keys not set. Add STRIPE_SECRET_KEY and price IDs via `wrangler secret put`.",
-      },
-      503,
+  if (!c.env.STRIPE_SECRET_KEY || !priceId) {
+    return err(
+      c,
+      "billing_not_configured",
+      "Stripe keys not set. Add STRIPE_SECRET_KEY and price IDs via `wrangler secret put`.",
     );
   }
 
-  // Ensure a Stripe customer exists for this user.
-  let customerId = await c.env.DB.prepare(
-    "SELECT stripe_customer_id FROM users WHERE id = ?",
-  )
-    .bind(c.var.user!.id)
-    .first<{ stripe_customer_id: string | null }>()
-    .then((r) => r?.stripe_customer_id ?? null);
+  try {
+    // Ensure a Stripe customer exists for this user.
+    let customerId = await c.env.DB.prepare("SELECT stripe_customer_id FROM users WHERE id = ?")
+      .bind(c.var.user!.id)
+      .first<{ stripe_customer_id: string | null }>()
+      .then((r) => r?.stripe_customer_id ?? null);
 
-  const stripe = (path: string, params: Record<string, string>) =>
-    fetch(`https://api.stripe.com/v1/${path}`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${key}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams(params),
-    }).then((r) => r.json() as Promise<Record<string, unknown>>);
+    if (!customerId) {
+      const cust = await stripe(c.env, "customers", {
+        email: c.var.user!.email,
+        name: c.var.user!.full_name,
+        "metadata[user_id]": c.var.user!.id,
+      });
+      customerId = cust.id as string;
+      await c.env.DB.prepare("UPDATE users SET stripe_customer_id = ?, updated_at = ? WHERE id = ?")
+        .bind(customerId, now(), c.var.user!.id)
+        .run();
+    }
 
-  if (!customerId) {
-    const cust = await stripe("customers", {
-      email: c.var.user!.email,
-      name: c.var.user!.full_name,
+    const session = await stripe<{ url?: string }>(c.env, "checkout/sessions", {
+      mode: "subscription",
+      customer: customerId,
+      "line_items[0][price]": priceId,
+      "line_items[0][quantity]": "1",
+      success_url: `${c.env.APP_URL}/app/account?upgraded=1`,
+      cancel_url: `${c.env.APP_URL}/pricing`,
       "metadata[user_id]": c.var.user!.id,
+      "metadata[plan]": plan,
     });
-    customerId = cust.id as string;
-    await c.env.DB.prepare(
-      "UPDATE users SET stripe_customer_id = ?, updated_at = ? WHERE id = ?",
-    )
-      .bind(customerId, now(), c.var.user!.id)
-      .run();
+    if (!session.url) return err(c, "internal", "Stripe did not return a checkout URL");
+    return c.json({ url: session.url });
+  } catch (e) {
+    if (e instanceof StripeError) return err(c, "internal", e.message);
+    throw e;
   }
-
-  const session = await stripe("checkout/sessions", {
-    mode: "subscription",
-    customer: customerId,
-    "line_items[0][price]": priceId,
-    "line_items[0][quantity]": "1",
-    success_url: `${c.env.APP_URL}/app/account?upgraded=1`,
-    cancel_url: `${c.env.APP_URL}/pricing`,
-    "metadata[user_id]": c.var.user!.id,
-    "metadata[plan]": plan,
-  });
-
-  return c.json({ url: session.url });
 });
 
 // Stripe webhook — keeps the subscriptions table + user plan in sync.
-// NOTE: signature verification is enabled when STRIPE_WEBHOOK_SECRET is set.
+// Signature is verified against STRIPE_WEBHOOK_SECRET; unverified events are
+// rejected (fail closed) so a forged POST cannot grant entitlements.
 billing.post("/webhook", async (c) => {
   const payload = await c.req.text();
   let event: Record<string, unknown>;
   try {
-    event = JSON.parse(payload);
-  } catch {
-    return c.json({ error: "invalid payload" }, 400);
+    event = await verifyStripeWebhook(c.env, payload, c.req.header("Stripe-Signature") ?? null);
+  } catch (e) {
+    const status = e instanceof StripeError ? e.status : 400;
+    return c.json({ error: "webhook_verification_failed" }, status as 400);
   }
 
   const type = event.type as string;
@@ -120,13 +104,10 @@ billing.post("/webhook", async (c) => {
   }
 
   if (type === "checkout.session.completed" || type?.startsWith("customer.subscription")) {
-    const userId = (obj.metadata as Record<string, string>)?.user_id;
-    const plan = (obj.metadata as Record<string, string>)?.plan;
-    const status = (obj.status as string) ?? "active";
+    const userId = meta.user_id;
+    const plan = meta.plan;
     if (userId && plan) {
-      await c.env.DB.prepare(
-        "UPDATE users SET plan = ?, updated_at = ? WHERE id = ?",
-      )
+      await c.env.DB.prepare("UPDATE users SET plan = ?, updated_at = ? WHERE id = ?")
         .bind(plan, now(), userId)
         .run();
     }

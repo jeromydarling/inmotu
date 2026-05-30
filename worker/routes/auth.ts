@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import type { Env, Vars } from "../types";
+import type { PublicUser } from "@shared/types";
 import { toPublicUser } from "../db";
 import { hashPassword, verifyPassword, isEmail, now, uid } from "../lib/util";
 import {
@@ -26,35 +27,37 @@ auth.post("/register", async (c) => {
   const existing = await c.env.DB.prepare("SELECT id FROM users WHERE email = ?")
     .bind(email.toLowerCase())
     .first();
-  if (existing) return c.json({ error: "Email already registered" }, 409);
+  if (existing) return c.json({ error: "conflict", message: "Email already registered" }, 409);
 
   const id = uid("usr_");
   const ts = now();
   const hash = await hashPassword(password);
-  await c.env.DB.prepare(
-    `INSERT INTO users (id, email, password_hash, full_name, home_region, zip, plan, role, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, 'free', 'member', ?, ?)`,
-  )
-    .bind(
-      id,
-      email.toLowerCase(),
-      hash,
-      full_name.trim(),
-      home_region ?? null,
-      zip ?? null,
-      ts,
-      ts,
+  const name = full_name.trim();
+  const emailLc = email.toLowerCase();
+  try {
+    await c.env.DB.prepare(
+      `INSERT INTO users (id, email, password_hash, full_name, home_region, zip, plan, role, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, 'free', 'member', ?, ?)`,
     )
-    .run();
+      .bind(id, emailLc, hash, name, home_region ?? null, zip ?? null, ts, ts)
+      .run();
+  } catch {
+    // UNIQUE(email) violation under a race → same 409 as the pre-check.
+    return c.json({ error: "conflict", message: "Email already registered" }, 409);
+  }
 
   const sid = await createSession(c.env, id);
   c.header("Set-Cookie", sessionCookie(sid, secure(c)));
-  const row = await c.env.DB.prepare(
-    "SELECT id, email, full_name, home_region, zip, plan, role FROM users WHERE id = ?",
-  )
-    .bind(id)
-    .first<Record<string, unknown>>();
-  return c.json({ user: toPublicUser(row!) }, 201);
+  const user: PublicUser = {
+    id,
+    email: emailLc,
+    full_name: name,
+    home_region: home_region ?? null,
+    zip: zip ?? null,
+    plan: "free",
+    role: "member",
+  };
+  return c.json({ user }, 201);
 });
 
 auth.post("/login", async (c) => {

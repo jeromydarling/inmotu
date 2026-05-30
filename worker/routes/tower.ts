@@ -1,24 +1,14 @@
 import { Hono } from "hono";
 import type { Env, Vars } from "../types";
 import { requireAuth } from "../auth/middleware";
-import { now, uid } from "../lib/util";
+import { now, uid, slugify } from "../lib/util";
+import { ownsEvent } from "../db";
+import { err } from "../lib/http";
 
 // The Tower — operator tools. An operator owns the events they create and
 // can see registrations + a one-click economic-impact summary.
 const tower = new Hono<{ Bindings: Env; Variables: Vars }>();
 tower.use("*", requireAuth);
-
-function slugify(s: string) {
-  return (
-    s
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "")
-      .slice(0, 60) +
-    "-" +
-    Math.random().toString(36).slice(2, 6)
-  );
-}
 
 // Events owned by this operator
 tower.get("/events", async (c) => {
@@ -49,7 +39,7 @@ tower.post("/events", async (c) => {
   )
     .bind(
       id,
-      slugify(b.title),
+      slugify(b.title, { maxLen: 60, unique: true }),
       b.title.trim(),
       b.discipline ?? null,
       b.body_slug ?? "independent",
@@ -72,12 +62,7 @@ tower.post("/events", async (c) => {
 // Registrations for an event you own, plus economic-impact rollup
 tower.get("/events/:id/registrations", async (c) => {
   const id = c.req.param("id");
-  const owns = await c.env.DB.prepare(
-    "SELECT 1 FROM events WHERE id = ? AND operator_id = ?",
-  )
-    .bind(id, c.var.user!.id)
-    .first();
-  if (!owns) return c.json({ error: "Not found" }, 404);
+  if (!(await ownsEvent(c.env, id, c.var.user!.id))) return err(c, "not_found");
 
   const { results } = await c.env.DB.prepare(
     `SELECT id, rider_name, race_class, status, amount_cents, travel_miles, created_at

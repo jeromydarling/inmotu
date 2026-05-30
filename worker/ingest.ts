@@ -1,5 +1,5 @@
 import type { Env } from "./types";
-import { now, uid } from "./lib/util";
+import { now, uid, slugify } from "./lib/util";
 
 // Event ingestion. Turns The Grid into a live aggregator: a Cron Trigger
 // pulls structured JSON feeds (MotorsportReg/MX Sports exports, club feeds)
@@ -24,10 +24,6 @@ export interface FeedEvent {
   track_name?: string;
 }
 
-function slugify(s: string) {
-  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 64);
-}
-
 export async function ingestEvents(
   env: Env,
   items: FeedEvent[],
@@ -40,7 +36,7 @@ export async function ingestEvents(
       skipped++;
       continue;
     }
-    const slug = it.slug || slugify(`${it.title}-${it.state ?? ""}-${it.starts_at}`);
+    const slug = it.slug || slugify(`${it.title}-${it.state ?? ""}-${it.starts_at}`, { maxLen: 64 });
     const id = it.id || uid("evt_");
     await env.DB.prepare(
       `INSERT INTO events (id, slug, title, discipline, body_slug, region, level, age_group,

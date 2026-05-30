@@ -1,13 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import type { EventItem } from "@shared/types";
 import { EventCard } from "../components/EventCard";
-import { EmptyState, Spinner } from "../components/ui";
+import { EmptyState, Spinner, Pill } from "../components/ui";
 import { useAuth } from "../state/auth";
+import { useToast } from "../state/toast";
 import { titleCase } from "../lib/format";
 
 export default function Grid() {
   const { user } = useAuth();
+  const nav = useNavigate();
+  const toast = useToast();
   const [events, setEvents] = useState<EventItem[]>([]);
   const [disciplines, setDisciplines] = useState<{ slug: string; label: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +41,7 @@ export default function Grid() {
 
   async function toggleSave(e: EventItem) {
     if (!user) {
-      window.location.href = "/login";
+      nav("/login", { state: { from: "/grid" } });
       return;
     }
     // optimistic
@@ -47,6 +51,7 @@ export default function Grid() {
     try {
       await api.toggleSave(e.id);
     } catch {
+      toast.error("Couldn't update your calendar. Try again.");
       setEvents((prev) =>
         prev.map((x) => (x.id === e.id ? { ...x, saved: e.saved } : x)),
       );
@@ -88,17 +93,17 @@ export default function Grid() {
           onChange={(e) => setQ(e.target.value)}
         />
         <div className="flex flex-wrap gap-2">
-          <FilterPill active={!discipline} onClick={() => setDiscipline("")}>
+          <Pill active={!discipline} onClick={() => setDiscipline("")}>
             All disciplines
-          </FilterPill>
+          </Pill>
           {disciplines.slice(0, 6).map((d) => (
-            <FilterPill
+            <Pill
               key={d.slug}
               active={discipline === d.slug}
               onClick={() => setDiscipline(discipline === d.slug ? "" : d.slug)}
             >
               {d.label}
-            </FilterPill>
+            </Pill>
           ))}
         </div>
       </div>
@@ -106,13 +111,13 @@ export default function Grid() {
         <span className="self-center text-xs font-semibold uppercase tracking-wider text-white/35">
           Level:
         </span>
-        <FilterPill active={!level} onClick={() => setLevel("")}>
+        <Pill active={!level} onClick={() => setLevel("")}>
           Any
-        </FilterPill>
+        </Pill>
         {levels.map((l) => (
-          <FilterPill key={l} active={level === l} onClick={() => setLevel(level === l ? "" : l)}>
+          <Pill key={l} active={level === l} onClick={() => setLevel(level === l ? "" : l)}>
             {titleCase(l)}
-          </FilterPill>
+          </Pill>
         ))}
       </div>
 
@@ -139,28 +144,5 @@ export default function Grid() {
         </div>
       )}
     </div>
-  );
-}
-
-function FilterPill({
-  children,
-  active,
-  onClick,
-}: {
-  children: React.ReactNode;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition ${
-        active
-          ? "border-ignition/50 bg-ignition/15 text-ignition-300"
-          : "border-white/10 bg-white/[0.03] text-white/55 hover:text-white"
-      }`}
-    >
-      {children}
-    </button>
   );
 }

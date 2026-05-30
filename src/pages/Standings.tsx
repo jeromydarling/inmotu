@@ -9,11 +9,14 @@ export default function Standings() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.seriesList().then((r) => {
-      setSeries(r.series);
-      setActive(r.series[0]?.slug ?? null);
-      setLoading(false);
-    });
+    api
+      .seriesList()
+      .then((r) => {
+        setSeries(r.series);
+        setActive(r.series[0]?.slug ?? null);
+      })
+      .catch(() => setSeries([]))
+      .finally(() => setLoading(false));
   }, []);
 
   if (loading) return <div className="container-page py-20"><Spinner className="mx-auto h-8 w-8" /></div>;
