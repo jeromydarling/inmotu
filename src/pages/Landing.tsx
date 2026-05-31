@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
+import { MapView, type MapPoint } from "../components/MapView";
+import { STATE_CENTROIDS } from "../lib/states";
 import { Badge } from "../components/ui";
 import { Reveal, CountUp, Marquee, AiImage, SpeedLines } from "../components/motion";
 import {
@@ -510,17 +512,12 @@ function LadderPreview() {
         ))}
       </div>
       <div className="border-t border-white/[0.06] px-5 py-3 text-xs text-white/40">
-        2 of 3 cleared · the whole crew's behind you
-      </div>
-    </div>
-  );
-}
 
-// Live mini-map for the hero — "where the racing is" + "where the battles are",
-// in one glance. Degrades to MapView's on-brand list when no Mapbox token.
+// Live mini-map for the hero — "where the racing is" + "where the battles are"
+// in one glance. Degrades to MapView's on-brand list without a Mapbox token.
 function HeroMap() {
   const [points, setPoints] = useState<MapPoint[]>([]);
-  const [stats, setStats] = useState({ events: 0, live: 0, battles: 0 });
+  const [counts, setCounts] = useState({ events: 0, live: 0, battles: 0 });
 
   useEffect(() => {
     api
@@ -561,7 +558,7 @@ function HeroMap() {
           });
         }
         setPoints(pts);
-        setStats({
+        setCounts({
           events: d.events.length,
           live: d.events.filter((e) => e.live).length,
           battles: d.endangered.length,
@@ -577,15 +574,15 @@ function HeroMap() {
       <MapView points={points} height={420} />
       <div className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-white/55">
         <span className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full bg-ignition" /> {stats.events} upcoming events
+          <span className="h-2.5 w-2.5 rounded-full bg-ignition" /> {counts.events} upcoming events
         </span>
-        {stats.live > 0 && (
+        {counts.live > 0 && (
           <span className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 animate-pulse-live rounded-full bg-flag-green" /> {stats.live} live now
+            <span className="h-2.5 w-2.5 animate-pulse-live rounded-full bg-flag-green" /> {counts.live} live now
           </span>
         )}
         <span className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 animate-pulse-live rounded-full bg-flag-red" /> {stats.battles} tracks defended
+          <span className="h-2.5 w-2.5 animate-pulse-live rounded-full bg-flag-red" /> {counts.battles} tracks defended
         </span>
         <span className="flex gap-3">
           <Link to="/map" className="text-ignition-300 hover:underline">Competition Map →</Link>

@@ -6,6 +6,7 @@ import { NotificationBell } from "./NotificationBell";
 
 const navItems = [
   { to: "/grid", label: "The Grid" },
+  { to: "/map", label: "Map" },
   { to: "/tracks", label: "Tracks" },
   { to: "/standings", label: "Standings" },
   { to: "/frontline", label: "Frontline" },
