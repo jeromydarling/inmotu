@@ -158,6 +158,20 @@ export const api = {
     req<{ ok: true }>("/ladder/progress", { method: "POST", body: JSON.stringify(body) }),
   clearLadder: (id: string) => req<{ ok: true }>(`/ladder/progress/${id}`, { method: "DELETE" }),
 
+  // BMX NAG points (best-8 calculator)
+  nagStanding: (riderId: string) =>
+    req<{
+      scores: { id: string; label: string | null; points: number; counting: boolean }[];
+      total: number;
+      counting_count: number;
+      needed: number;
+      races_until_full: number;
+      improve_threshold: number | null;
+    }>(`/ladder/nag/${riderId}`),
+  addNagScore: (riderId: string, body: Record<string, unknown>) =>
+    req<{ ok: true; id: string }>(`/ladder/nag/${riderId}`, { method: "POST", body: JSON.stringify(body) }),
+  deleteNagScore: (id: string) => req<{ ok: true }>(`/ladder/nag/score/${id}`, { method: "DELETE" }),
+
   // photos
   photos: (params: Record<string, string> = {}) =>
     req<{ photos: Photo[] }>(`/photos?${new URLSearchParams(params)}`),

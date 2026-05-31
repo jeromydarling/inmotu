@@ -115,4 +115,69 @@ ladder.delete("/progress/:id", async (c) => {
   return c.json({ ok: true });
 });
 
+// ── BMX NAG points (best-8 calculator) ───────────────────────────────────────
+// All NAG routes require auth; logging requires the ladder (Family) entitlement.
+ladder.use("/nag/*", requireAuth);
+
+// A rider's NAG standing: their scores + best-8 total + "what you need next".
+ladder.get("/nag/:riderId", async (c) => {
+  const riderId = c.req.param("riderId");
+  if (!(await ownsRider(c.env, riderId, c.var.user!.id))) return err(c, "not_found", "Rider not found");
+
+  const { results } = await c.env.DB.prepare(
+    "SELECT id, label, points, raced_at, created_at FROM bmx_scores WHERE rider_id = ? ORDER BY points DESC, created_at ASC",
+  )
+    .bind(riderId)
+    .all<{ id: string; label: string | null; points: number; raced_at: number | null; created_at: number }>();
+
+  const scores = results;
+  // Best 8 scores count toward the NAG total (USA BMX rule).
+  const COUNTING = 8;
+  const sorted = [...scores].sort((a, b) => b.points - a.points);
+  const countingIds = new Set(sorted.slice(0, COUNTING).map((s) => s.id));
+  const total = sorted.slice(0, COUNTING).reduce((sum, s) => sum + s.points, 0);
+
+  // The lowest-counting score is the one a new race must beat to improve.
+  const counting = sorted.slice(0, COUNTING);
+  const dropScore = counting.length === COUNTING ? counting[counting.length - 1].points : 0;
+  const racesUntilFull = Math.max(0, COUNTING - scores.length);
+
+  return c.json({
+    scores: scores.map((s) => ({ ...s, counting: countingIds.has(s.id) })),
+    total,
+    counting_count: counting.length,
+    needed: COUNTING,
+    races_until_full:racesUntilFull,
+    // Once you have 8, only a score above this replaces your weakest counting one.
+    improve_threshold: scores.length >= COUNTING ? dropScore : null,
+  });
+});
+
+// Log a score (a race result's points). Family feature.
+ladder.post("/nag/:riderId", requirePlan("ladder"), async (c) => {
+  const riderId = c.req.param("riderId");
+  if (!(await ownsRider(c.env, riderId, c.var.user!.id))) return err(c, "not_found", "Rider not found");
+  const b = await c.req.json().catch(() => ({}));
+  const points = Number(b.points);
+  if (!Number.isFinite(points) || points < 0) return err(c, "validation", "points required");
+  const id = uid("nag_");
+  await c.env.DB.prepare(
+    "INSERT INTO bmx_scores (id, rider_id, label, points, raced_at, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+  )
+    .bind(id, riderId, typeof b.label === "string" ? b.label.slice(0, 80) : null, Math.round(points), b.raced_at ?? null, now())
+    .run();
+  return c.json({ ok: true, id }, 201);
+});
+
+// Delete a logged score. Family feature.
+ladder.delete("/nag/score/:id", requirePlan("ladder"), async (c) => {
+  await c.env.DB.prepare(
+    `DELETE FROM bmx_scores WHERE id = ?
+       AND rider_id IN (SELECT id FROM riders WHERE user_id = ?)`,
+  )
+    .bind(c.req.param("id"), c.var.user!.id)
+    .run();
+  return c.json({ ok: true });
+});
+
 export default ladder;

@@ -163,6 +163,126 @@ function RiderLadder({ riderId }: { riderId: string }) {
           ? "Log how you finished at each step — bank your points, make the team, and chase the title. Each cleared rung lights up the next."
           : "Log a finish at each stage — top finishers advance automatically and light up the next rung on the way to the top."}
       </p>
+
+      {/* BMX: the NAG best-8 points calculator (their #1 unmet need). */}
+      {data.ladder.discipline === "bmx" && <NagCalculator riderId={riderId} riderName={data.rider.name} />}
+    </div>
+  );
+}
+
+// USA BMX National Age Group standing: your best 8 scores count. Log the points
+// you earn at each race and see your NAG total + exactly what you need next.
+function NagCalculator({ riderId, riderName }: { riderId: string; riderName: string }) {
+  const [data, setData] = useState<Awaited<ReturnType<typeof api.nagStanding>> | null>(null);
+  const [points, setPoints] = useState("");
+  const [label, setLabel] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  function load() {
+    api.nagStanding(riderId).then(setData).catch(() => setData(null));
+  }
+  useEffect(load, [riderId]);
+
+  async function add() {
+    const p = Number(points);
+    if (!Number.isFinite(p) || p < 0) return;
+    setBusy(true);
+    try {
+      await api.addNagScore(riderId, { points: p, label: label || null });
+      setPoints("");
+      setLabel("");
+      load();
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function remove(id: string) {
+    await api.deleteNagScore(id);
+    load();
+  }
+
+  if (!data) return null;
+  const full = data.counting_count >= data.needed;
+
+  return (
+    <div className="panel mt-6 p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="eyebrow">NAG points · best {data.needed}</p>
+          <h4 className="mt-1 font-display text-lg font-bold">{riderName}'s national standing</h4>
+        </div>
+        <div className="text-right">
+          <div className="font-display text-3xl font-extrabold text-ignition">{data.total.toLocaleString()}</div>
+          <div className="text-xs text-white/45">NAG total</div>
+        </div>
+      </div>
+
+      {/* "What you need next" coaching line — the killer feature. */}
+      <div className="mt-3 rounded-xl border border-ignition/20 bg-ignition/[0.06] px-4 py-3 text-sm">
+        {!full ? (
+          <span className="text-white/75">
+            <span className="font-semibold text-ignition-300">{data.races_until_full} more race{data.races_until_full === 1 ? "" : "s"}</span>{" "}
+            until all {data.needed} scores count — every result still adds to your total. Keep racing.
+          </span>
+        ) : (
+          <span className="text-white/75">
+            You've got your best {data.needed}. To climb, you need a race worth{" "}
+            <span className="font-semibold text-ignition-300">more than {data.improve_threshold} points</span>{" "}
+            — it'll replace your weakest counting score.
+          </span>
+        )}
+      </div>
+
+      {/* Add a score */}
+      <div className="mt-4 flex flex-wrap gap-2">
+        <input
+          className="field w-28 py-1.5 text-sm"
+          type="number"
+          min={0}
+          placeholder="Points"
+          value={points}
+          onChange={(e) => setPoints(e.target.value)}
+        />
+        <input
+          className="field flex-1 py-1.5 text-sm"
+          placeholder="Race (e.g. Gold Cup R3)"
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+        />
+        <button className="btn-primary btn-sm" disabled={busy || !points} onClick={add}>
+          + Add race
+        </button>
+      </div>
+
+      {/* Scores — counting ones highlighted */}
+      {data.scores.length > 0 && (
+        <div className="mt-4 space-y-1.5">
+          {data.scores.map((s) => (
+            <div
+              key={s.id}
+              className={`flex items-center gap-3 rounded-lg border px-3 py-2 text-sm ${
+                s.counting ? "border-flag-green/25 bg-flag-green/[0.05]" : "border-white/[0.06] bg-carbon-850 opacity-60"
+              }`}
+            >
+              <span className={`font-display text-lg font-extrabold ${s.counting ? "text-flag-green" : "text-white/40"}`}>
+                {s.points}
+              </span>
+              <span className="min-w-0 flex-1 truncate text-white/70">{s.label || "Race"}</span>
+              {s.counting ? (
+                <span className="shrink-0 text-[11px] font-semibold text-flag-green">counts</span>
+              ) : (
+                <span className="shrink-0 text-[11px] text-white/35">dropped</span>
+              )}
+              <button onClick={() => remove(s.id)} className="shrink-0 text-white/30 hover:text-flag-red" aria-label="Remove">
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <p className="mt-3 text-[11px] text-white/40">
+        Top 10 in your class at season's end earn a NAG plate. Only your best {data.needed} scores count toward the total.
+      </p>
     </div>
   );
 }
