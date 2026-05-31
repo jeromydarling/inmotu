@@ -4,6 +4,7 @@ import { api } from "../api/client";
 import type { Legislation } from "@shared/types";
 import { Badge, Spinner } from "../components/ui";
 import { MapView, type MapPoint } from "../components/MapView";
+import { STATE_CENTROIDS } from "../lib/states";
 import { useAuth } from "../state/auth";
 import { useToast } from "../state/toast";
 
@@ -91,6 +92,43 @@ export default function Frontline() {
 
   const enacted = bills.filter((b) => b.status === "enacted").length;
   const active = bills.filter((b) => ["introduced", "committee", "passed"].includes(b.status)).length;
+
+  // Battle map: endangered tracks (precise) + legislation by state (centroid).
+  const battlePoints: MapPoint[] = (() => {
+    const pts: MapPoint[] = endangered
+      .filter((t) => t.lat != null && t.lng != null)
+      .map((t) => ({
+        lat: t.lat,
+        lng: t.lng,
+        title: t.name,
+        sub: t.threat_type || t.description || "Threatened",
+        tone: "red" as const,
+        pulse: true,
+        href: `/tracks/${t.slug}`,
+      }));
+    // Aggregate bills by state → one pin per state at its centroid.
+    const byState = new Map<string, { name: string; enacted: number; active: number }>();
+    for (const b of bills) {
+      const code = (b.state || "").toUpperCase();
+      if (!STATE_CENTROIDS[code]) continue;
+      const cur = byState.get(code) ?? { name: b.state_name || code, enacted: 0, active: 0 };
+      if (b.status === "enacted") cur.enacted++;
+      else if (["introduced", "committee", "passed"].includes(b.status)) cur.active++;
+      byState.set(code, cur);
+    }
+    for (const [code, s] of byState) {
+      const [lat, lng] = STATE_CENTROIDS[code];
+      const tone = s.enacted > 0 ? ("green" as const) : s.active > 0 ? ("amber" as const) : ("ignition" as const);
+      pts.push({
+        lat,
+        lng,
+        title: s.name,
+        sub: s.enacted > 0 ? `${s.enacted} law${s.enacted === 1 ? "" : "s"} enacted` : `${s.active} bill${s.active === 1 ? "" : "s"} active`,
+        tone,
+      });
+    }
+    return pts;
+  })();
 
   return (
     <div className="container-page py-12">

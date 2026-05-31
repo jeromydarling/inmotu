@@ -1,14 +1,26 @@
 import { useEffect, useRef } from "react";
 import { useConfig } from "../state/config";
 
+export type MapTone = "ignition" | "red" | "green" | "amber";
+
 export interface MapPoint {
   lat: number;
   lng: number;
   title: string;
   sub?: string;
-  danger?: boolean;
+  danger?: boolean; // back-compat: red + pulse
+  tone?: MapTone;
+  pulse?: boolean;
   href?: string;
 }
+
+const TONE_COLOR: Record<MapTone, string> = {
+  ignition: "#FF4D14",
+  red: "#FF3B4E",
+  green: "#22C55E",
+  amber: "#F59E0B",
+};
+const resolveTone = (p: MapPoint): MapTone => p.tone ?? (p.danger ? "red" : "ignition");
 
 let mapboxCssInjected = false;
 function injectMapboxCss() {
@@ -62,11 +74,14 @@ export function MapView({
       map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
 
       for (const p of points) {
+        const tone = resolveTone(p);
+        const color = TONE_COLOR[tone];
+        const pulse = p.pulse ?? p.danger ?? false;
         const el = document.createElement("div");
-        el.style.cssText = `width:16px;height:16px;border-radius:50%;cursor:pointer;border:2px solid #07080B;box-shadow:0 0 0 2px ${
-          p.danger ? "rgba(255,59,78,.6)" : "rgba(255,77,20,.6)"
-        };background:${p.danger ? "#FF3B4E" : "#FF4D14"};`;
-        if (p.danger) el.style.animation = "pulse-live 1.6s ease-in-out infinite";
+        const rgb =
+          tone === "red" ? "255,59,78" : tone === "green" ? "34,197,94" : tone === "amber" ? "245,158,11" : "255,77,20";
+        el.style.cssText = `width:16px;height:16px;border-radius:50%;cursor:pointer;border:2px solid #07080B;box-shadow:0 0 0 2px rgba(${rgb},.6);background:${color};`;
+        if (pulse) el.style.animation = "pulse-live 1.6s ease-in-out infinite";
         const popup = new mapboxgl.Popup({ offset: 16, closeButton: false }).setHTML(
           `<div style="font-family:Inter,sans-serif;color:#0A0C11;min-width:140px">
              <strong>${p.title}</strong>${p.sub ? `<br><span style="opacity:.7;font-size:12px">${p.sub}</span>` : ""}
@@ -103,7 +118,10 @@ export function MapView({
               href={p.href || "#"}
               className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-carbon-850 p-3"
             >
-              <span className={`h-2.5 w-2.5 rounded-full ${p.danger ? "bg-flag-red" : "bg-ignition"}`} />
+              <span
+                className="h-2.5 w-2.5 shrink-0 rounded-full"
+                style={{ background: TONE_COLOR[resolveTone(p)] }}
+              />
               <div className="min-w-0">
                 <div className="truncate text-sm font-semibold text-white">{p.title}</div>
                 {p.sub && <div className="truncate text-xs text-white/45">{p.sub}</div>}

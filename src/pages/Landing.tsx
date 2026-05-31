@@ -510,3 +510,83 @@ function LadderPreview() {
     </div>
   );
 }
+
+// Live mini-map for the hero — "where the racing is" + "where the battles are",
+// in one glance. Degrades to MapView's on-brand list when no Mapbox token.
+function HeroMap() {
+  const [points, setPoints] = useState<MapPoint[]>([]);
+  const [stats, setStats] = useState({ events: 0, live: 0, battles: 0 });
+
+  useEffect(() => {
+    api
+      .mapPins()
+      .then((d) => {
+        const pts: MapPoint[] = [];
+        for (const e of d.events) {
+          pts.push({
+            lat: e.lat,
+            lng: e.lng,
+            title: e.title,
+            sub: e.track_name,
+            tone: e.live ? "green" : "ignition",
+            pulse: !!e.live,
+            href: `/events/${e.slug}`,
+          });
+        }
+        for (const t of d.endangered) {
+          pts.push({
+            lat: t.lat,
+            lng: t.lng,
+            title: t.name,
+            sub: t.threat_type || "Endangered track",
+            tone: "red",
+            pulse: true,
+            href: `/tracks/${t.slug}`,
+          });
+        }
+        for (const l of d.legislation) {
+          const c = STATE_CENTROIDS[(l.state || "").toUpperCase()];
+          if (!c) continue;
+          pts.push({
+            lat: c[0],
+            lng: c[1],
+            title: l.state_name,
+            sub: l.enacted > 0 ? `${l.enacted} law(s) enacted` : `${l.active} bill(s) active`,
+            tone: l.enacted > 0 ? "green" : l.active > 0 ? "amber" : "ignition",
+          });
+        }
+        setPoints(pts);
+        setStats({
+          events: d.events.length,
+          live: d.events.filter((e) => e.live).length,
+          battles: d.endangered.length,
+        });
+      })
+      .catch(() => {});
+  }, []);
+
+  if (points.length === 0) return null;
+
+  return (
+    <div>
+      <MapView points={points} height={420} />
+      <div className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-white/55">
+        <span className="flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-full bg-ignition" /> {stats.events} upcoming events
+        </span>
+        {stats.live > 0 && (
+          <span className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 animate-pulse-live rounded-full bg-flag-green" /> {stats.live} live now
+          </span>
+        )}
+        <span className="flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 animate-pulse-live rounded-full bg-flag-red" /> {stats.battles} tracks defended
+        </span>
+        <span className="flex gap-3">
+          <Link to="/map" className="text-ignition-300 hover:underline">Competition Map →</Link>
+          <Link to="/frontline" className="text-ignition-300 hover:underline">Battle Map →</Link>
+        </span>
+      </div>
+    </div>
+  );
+}

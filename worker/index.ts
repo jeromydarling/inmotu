@@ -25,6 +25,7 @@ import studio from "./routes/studio";
 import teampages from "./routes/teampages";
 import notifications from "./routes/notifications";
 import onboarding from "./routes/onboarding";
+import mapRoutes from "./routes/map";
 import { ingestFromFeeds } from "./ingest";
 import { runDeadlineSweep } from "./lib/notify";
 import { refreshLegislation } from "./lib/perplexity";
@@ -62,6 +63,7 @@ api.route("/studio", studio);
 api.route("/teampages", teampages);
 api.route("/notifications", notifications);
 api.route("/onboarding", onboarding);
+api.route("/map", mapRoutes);
 
 api.notFound((c) => c.json({ error: "Not found" }, 404));
 api.onError((err, c) => {

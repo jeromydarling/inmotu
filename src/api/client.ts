@@ -77,6 +77,12 @@ export const api = {
   myRegistrations: () => req<{ registrations: Registration[] }>("/events/registrations/mine"),
   eventResults: (slug: string, refresh = false) =>
     req<{ linked: boolean; sessions: any[] }>(`/events/${slug}/results${refresh ? "?refresh=1" : ""}`),
+  mapPins: () =>
+    req<{
+      events: { slug: string; title: string; discipline?: string; starts_at: number; lat: number; lng: number; track_name?: string; live: number }[];
+      endangered: { slug: string; name: string; state?: string; lat: number; lng: number; threat_type?: string }[];
+      legislation: { state: string; state_name: string; enacted: number; active: number; total: number }[];
+    }>("/map/pins"),
 
   // tracks
   tracks: (params: Record<string, string> = {}) =>
