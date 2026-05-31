@@ -180,4 +180,53 @@ ladder.delete("/nag/score/:id", requirePlan("ladder"), async (c) => {
   return c.json({ ok: true });
 });
 
+// ── Drag track-points projection ─────────────────────────────────────────────
+// Drag points are CUMULATIVE (every race counts) and the goal is hitting a
+// season target — the points cutoff to make your division team → Vegas. Reuses
+// the per-race points log; the racer sets their target. All routes require auth.
+ladder.use("/points/*", requireAuth);
+
+ladder.get("/points/:riderId", async (c) => {
+  const riderId = c.req.param("riderId");
+  const rider = await c.env.DB.prepare("SELECT id, points_target FROM riders WHERE id = ? AND user_id = ?")
+    .bind(riderId, c.var.user!.id)
+    .first<{ id: string; points_target: number | null }>();
+  if (!rider) return err(c, "not_found", "Rider not found");
+
+  const { results } = await c.env.DB.prepare(
+    "SELECT id, label, points, raced_at, created_at FROM bmx_scores WHERE rider_id = ? ORDER BY created_at ASC",
+  )
+    .bind(riderId)
+    .all<{ id: string; label: string | null; points: number; raced_at: number | null; created_at: number }>();
+
+  const total = results.reduce((sum, s) => sum + s.points, 0);
+  const races = results.length;
+  const avg = races > 0 ? Math.round(total / races) : 0;
+  const target = rider.points_target ?? null;
+  const remaining = target != null ? Math.max(0, target - total) : null;
+  // "What you need next": races-to-target at your current average pace.
+  const racesToTarget = target != null && remaining! > 0 && avg > 0 ? Math.ceil(remaining! / avg) : null;
+
+  return c.json({
+    scores: results,
+    total,
+    races,
+    avg,
+    target,
+    remaining,
+    races_to_target: racesToTarget,
+    on_track: target != null ? total >= target : null,
+  });
+});
+
+// Set (or clear) the season points target. Family feature.
+ladder.post("/points/:riderId/target", requirePlan("ladder"), async (c) => {
+  const riderId = c.req.param("riderId");
+  if (!(await ownsRider(c.env, riderId, c.var.user!.id))) return err(c, "not_found", "Rider not found");
+  const b = await c.req.json().catch(() => ({}));
+  const target = b.target != null && Number.isFinite(Number(b.target)) ? Math.round(Number(b.target)) : null;
+  await c.env.DB.prepare("UPDATE riders SET points_target = ? WHERE id = ?").bind(target, riderId).run();
+  return c.json({ ok: true, target });
+});
+
 export default ladder;

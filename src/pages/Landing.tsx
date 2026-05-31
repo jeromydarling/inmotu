@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, type VenuePin } from "../api/client";
+import { SECTORS, type SectorId } from "@shared/types";
 import { Badge } from "../components/ui";
 import { VenueMap } from "../components/VenueMap";
 import { Reveal, CountUp, Marquee, AiImage, SpeedLines } from "../components/motion";
@@ -560,16 +561,17 @@ function HeroCanvas() {
 
 // "Built for your world" — speaks to every community we serve. Each sector
 // gets its own language, ladder, and tracks once you pick it at sign-up.
+// Driven by the canonical SECTORS catalog so the marketing copy uses each
+// community's real vocabulary + voice — never generic, never drifting.
+const SECTOR_ORDER: SectorId[] = [
+  "motocross", "bmx", "drag", "karting_sprint", "karting_dirt", "roadrace", "autocross",
+];
+const SECTOR_ACCENT: Record<SectorId, string> = {
+  motocross: "#22C55E", bmx: "#FF4D14", drag: "#3B82F6", karting_sprint: "#A855F7",
+  karting_dirt: "#F59E0B", roadrace: "#FF4D14", autocross: "#94A3B8",
+};
+
 function SectorBand() {
-  const sectors: { label: string; line: string; accent: string }[] = [
-    { label: "Motocross", line: "From the gate drop to the Nationals ladder.", accent: "#22C55E" },
-    { label: "BMX Racing", line: "Motos, mains, and the road to your #1 plate.", accent: "#FF4D14" },
-    { label: "Drag Racing", line: "Cut a light, nail the dial — track points to Vegas.", accent: "#3B82F6" },
-    { label: "Sprint Karting", line: "LO206 to shifters. Where champions start.", accent: "#A855F7" },
-    { label: "Dirt-Oval Karting", line: "Hot laps, heats, and the feature on clay.", accent: "#F59E0B" },
-    { label: "Road Racing", line: "Track days, sessions, and wheel-to-wheel.", accent: "#FF4D14" },
-    { label: "Autocross", line: "Cones, classes, and your own best time.", accent: "#94A3B8" },
-  ];
   return (
     <section className="border-y border-white/[0.06] bg-carbon-900/40 py-20">
       <div className="container-page">
@@ -584,17 +586,31 @@ function SectorBand() {
           </p>
         </Reveal>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {sectors.map((s, i) => (
-            <Reveal key={s.label} delay={(i % 3) * 70}>
-              <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-carbon-850 p-5">
-                <span className="absolute inset-y-0 left-0 w-1" style={{ background: s.accent }} />
-                <div className="pl-2">
-                  <div className="font-display text-lg font-bold text-white">{s.label}</div>
-                  <p className="mt-1 text-sm text-white/55">{s.line}</p>
+          {SECTOR_ORDER.map((id, i) => {
+            const s = SECTORS[id];
+            return (
+              <Reveal key={id} delay={(i % 3) * 70}>
+                <div className="relative h-full overflow-hidden rounded-2xl border border-white/[0.08] bg-carbon-850 p-5">
+                  <span className="absolute inset-y-0 left-0 w-1" style={{ background: SECTOR_ACCENT[id] }} />
+                  <div className="pl-2">
+                    <div className="font-display text-lg font-bold text-white">{s.label}</div>
+                    <p className="mt-1 text-sm text-white/55">{s.tagline}</p>
+                    {/* the community's own words — the authenticity signal */}
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {s.voice.slice(0, 4).map((phrase) => (
+                        <span
+                          key={phrase}
+                          className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[11px] text-white/50"
+                        >
+                          {phrase}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </Reveal>
-          ))}
+              </Reveal>
+            );
+          })}
           <Reveal delay={140}>
             <Link
               to="/register"

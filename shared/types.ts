@@ -176,6 +176,8 @@ export interface Rider {
   number: string | null;
   ama_license: string | null;
   skill_level: string | null;
+  wins?: number;
+  points_target?: number | null;
 }
 
 export interface Legislation {

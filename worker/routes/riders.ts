@@ -87,6 +87,33 @@ riders.get("/:id/results", async (c) => {
   return c.json({ results });
 });
 
+// Update a rider's progression fields — wins (for the BMX "wins to next class"
+// counter) and skill_level (proficiency). Only the owner can edit.
+riders.patch("/:id", async (c) => {
+  const id = c.req.param("id");
+  const owns = await c.env.DB.prepare("SELECT 1 FROM riders WHERE id = ? AND user_id = ?")
+    .bind(id, c.var.user!.id)
+    .first();
+  if (!owns) return err(c, "not_found", "Rider not found");
+  const b = await c.req.json().catch(() => ({}));
+  const sets: string[] = [];
+  const binds: unknown[] = [];
+  if (b.wins != null && Number.isFinite(Number(b.wins))) {
+    sets.push("wins = ?");
+    binds.push(Math.max(0, Math.round(Number(b.wins))));
+  }
+  if (typeof b.skill_level === "string" && ["novice", "intermediate", "expert", "pro"].includes(b.skill_level)) {
+    sets.push("skill_level = ?");
+    binds.push(b.skill_level);
+  }
+  if (sets.length === 0) return err(c, "validation", "nothing to update");
+  await c.env.DB.prepare(`UPDATE riders SET ${sets.join(", ")} WHERE id = ?`)
+    .bind(...binds, id)
+    .run();
+  const row = await c.env.DB.prepare("SELECT * FROM riders WHERE id = ?").bind(id).first();
+  return c.json({ rider: row });
+});
+
 riders.delete("/:id", async (c) => {
   await c.env.DB.prepare("DELETE FROM riders WHERE id = ? AND user_id = ?")
     .bind(c.req.param("id"), c.var.user!.id)

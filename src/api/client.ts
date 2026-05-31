@@ -127,6 +127,8 @@ export const api = {
   createRider: (body: Record<string, unknown>) =>
     req<{ rider: Rider }>("/riders", { method: "POST", body: JSON.stringify(body) }),
   deleteRider: (id: string) => req<{ ok: true }>(`/riders/${id}`, { method: "DELETE" }),
+  updateRider: (id: string, body: Record<string, unknown>) =>
+    req<{ rider: Rider }>(`/riders/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   riderResults: (id: string) =>
     req<{ results: any[] }>(`/riders/${id}/results`),
   budgetSummary: () => req<{ summary: BudgetRow[] }>("/riders/budget/summary"),
@@ -171,6 +173,24 @@ export const api = {
   addNagScore: (riderId: string, body: Record<string, unknown>) =>
     req<{ ok: true; id: string }>(`/ladder/nag/${riderId}`, { method: "POST", body: JSON.stringify(body) }),
   deleteNagScore: (id: string) => req<{ ok: true }>(`/ladder/nag/score/${id}`, { method: "DELETE" }),
+
+  // Drag track-points projection (cumulative; shares the points log + nag score routes)
+  pointsStanding: (riderId: string) =>
+    req<{
+      scores: { id: string; label: string | null; points: number }[];
+      total: number;
+      races: number;
+      avg: number;
+      target: number | null;
+      remaining: number | null;
+      races_to_target: number | null;
+      on_track: boolean | null;
+    }>(`/ladder/points/${riderId}`),
+  setPointsTarget: (riderId: string, target: number | null) =>
+    req<{ ok: true; target: number | null }>(`/ladder/points/${riderId}/target`, {
+      method: "POST",
+      body: JSON.stringify({ target }),
+    }),
 
   // photos
   photos: (params: Record<string, string> = {}) =>
