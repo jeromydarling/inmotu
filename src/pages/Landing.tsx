@@ -119,12 +119,12 @@ export default function Landing() {
               <Link to="/register" className="btn-primary px-6 py-3 text-base">
                 Find your people →
               </Link>
-              <Link to="/demo" className="btn-ghost px-6 py-3 text-base backdrop-blur">
-                ▶ Try the live demo
+              <Link to="/start" className="btn-ghost px-6 py-3 text-base backdrop-blur">
+                New to racing? Start here
               </Link>
             </div>
             <p className="mt-4 text-xs text-white/45">
-              Free forever for the calendar &amp; the cause. No card, no catch.
+              Never raced? You still belong here. Free forever for the calendar &amp; the cause.
             </p>
           </div>
 

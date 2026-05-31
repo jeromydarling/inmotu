@@ -5,6 +5,7 @@ import { useAuth } from "../state/auth";
 import { NotificationBell } from "./NotificationBell";
 
 const navItems = [
+  { to: "/start", label: "Start Here" },
   { to: "/grid", label: "The Grid" },
   { to: "/map", label: "Map" },
   { to: "/tracks", label: "Tracks" },

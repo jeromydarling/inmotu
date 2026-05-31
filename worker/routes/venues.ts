@@ -31,9 +31,11 @@ venues.get("/", async (c) => {
   }
   if (status) (where.push("status = ?"), binds.push(status));
   if (q) (where.push("name LIKE ?"), binds.push(`%${q}%`));
+  if (c.req.query("beginner") === "1") where.push("beginner_friendly = 1");
 
   const sql = `
-    SELECT id, name, category, surface, city, state, lat, lng, website, status
+    SELECT id, name, category, surface, city, state, lat, lng, website, status,
+           beginner_friendly, starter_note
     FROM venues
     ${where.length ? "WHERE " + where.join(" AND ") : ""}
     LIMIT ?`;

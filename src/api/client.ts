@@ -117,6 +117,13 @@ export const api = {
     req<{ total: number; states: number; byCategory: { category: string; n: number }[] }>(
       "/venues/stats",
     ),
+  // newcomer on-ramp
+  startSector: (sector: string) =>
+    req<{
+      sector: string;
+      venues: { id: string; name: string; category: string; city: string | null; state: string | null; lat: number; lng: number; website: string | null; starter_note: string | null }[];
+      events: { slug: string; title: string; discipline: string | null; level: string | null; starts_at: number; track_name: string | null; track_city: string | null; track_state: string | null }[];
+    }>(`/start/${sector}`),
   venue: (id: string) =>
     req<{ venue: any; events: { slug: string; title: string; discipline?: string; starts_at: number; live: number }[] }>(
       `/venues/${id}`,

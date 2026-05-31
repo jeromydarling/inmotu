@@ -27,6 +27,7 @@ import notifications from "./routes/notifications";
 import onboarding from "./routes/onboarding";
 import mapRoutes from "./routes/map";
 import venues from "./routes/venues";
+import start from "./routes/start";
 import { ingestFromFeeds } from "./ingest";
 import { runDeadlineSweep } from "./lib/notify";
 import { refreshLegislation } from "./lib/perplexity";
@@ -68,6 +69,7 @@ api.route("/notifications", notifications);
 api.route("/onboarding", onboarding);
 api.route("/map", mapRoutes);
 api.route("/venues", venues);
+api.route("/start", start);
 
 api.notFound((c) => c.json({ error: "Not found" }, 404));
 api.onError((err, c) => {
