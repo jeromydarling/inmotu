@@ -33,6 +33,7 @@ export interface Env {
   FIRECRAWL_API_KEY?: string; // optional fallback for hard/anti-bot sources
   CRAWL_SOURCES?: string; // json: [{url, region?, discipline?, provider?}]
   OVERPASS_URL?: string; // override/prefer a specific Overpass API mirror
+  DISCOVERY_DAILY_BUDGET?: string; // max cold discovery runs/day (cost cap; default 60)
 }
 
 // Hono context variables

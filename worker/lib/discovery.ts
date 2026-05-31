@@ -108,6 +108,44 @@ async function cacheSet(env: Env, key: string, payload: unknown): Promise<void> 
     .run();
 }
 
+const DEFAULT_DAILY_BUDGET = 60; // cold discovery runs/day (cost cap)
+const LOCK_TTL = 120; // seconds an in-flight lock is honored before it's stale
+
+/**
+ * Claim the right to run one cold discovery: enforces a per-UTC-day global cap
+ * (cost ceiling) AND a per-slice in-flight lock (no thundering herd on the same
+ * cold slice). Returns true only if this caller may proceed. Best-effort under
+ * D1's read-then-write; the cap is a guard-rail, not a hard transaction.
+ */
+async function claimRun(env: Env, sliceKey: string): Promise<boolean> {
+  const t = now();
+
+  // 1) Per-slice in-flight lock — skip if another run claimed it recently.
+  const lockKey = `disc_lock:${sliceKey}`;
+  const lock = await env.DB.prepare("SELECT refreshed_at FROM ai_cache WHERE key = ?")
+    .bind(lockKey)
+    .first<{ refreshed_at: number }>();
+  if (lock && t - lock.refreshed_at < LOCK_TTL) return false;
+
+  // 2) Per-day global budget.
+  const budget = Number(env.DISCOVERY_DAILY_BUDGET) || DEFAULT_DAILY_BUDGET;
+  const dayKey = `disc_budget:${new Date(t * 1000).toISOString().slice(0, 10)}`;
+  const row = await env.DB.prepare("SELECT payload FROM ai_cache WHERE key = ?")
+    .bind(dayKey)
+    .first<{ payload: string }>();
+  const used = row ? Number(parseJson<number>(row.payload, 0)) : 0;
+  if (used >= budget) return false;
+
+  // Reserve: bump the day counter and set the slice lock.
+  await env.DB.prepare("INSERT OR REPLACE INTO ai_cache (key, payload, refreshed_at) VALUES (?, ?, ?)")
+    .bind(dayKey, JSON.stringify(used + 1), t)
+    .run();
+  await env.DB.prepare("INSERT OR REPLACE INTO ai_cache (key, payload, refreshed_at) VALUES (?, ?, ?)")
+    .bind(lockKey, "1", t)
+    .run();
+  return true;
+}
+
 // ── Pass 1: beginner / try-it events ────────────────────────────────────────
 
 export interface DiscoveredBeginnerEvent {
@@ -226,8 +264,12 @@ export async function ensureDiscovered(
 ): Promise<{ ran: boolean; events: number; crews: number }> {
   if (!env.PERPLEXITY_API_KEY) return { ran: false, events: 0, crews: 0 };
   if (!SECTOR_INFO[sector] || !STATE_NAMES[state]) return { ran: false, events: 0, crews: 0 };
-  const key = `discover:${sector}:${state}`;
+  const slice = `${sector}:${state}`;
+  const key = `discover:${slice}`;
   if (await cacheGet<true>(env, key)) return { ran: false, events: 0, crews: 0 };
+
+  // Cost + concurrency guard: respect the daily budget and per-slice lock.
+  if (!(await claimRun(env, slice))) return { ran: false, events: 0, crews: 0 };
 
   let eventCount = 0;
   let crewCount = 0;

@@ -27,10 +27,17 @@ start.get("/:sector", async (c) => {
   if (!map) return c.json({ error: "Unknown sector" }, 404);
   const state = (c.req.query("state") ?? "").slice(0, 2).toUpperCase();
 
-  // On-demand discovery for this slice (cached ~3 weeks; no-op without a key).
-  let discovery = { ran: false, events: 0, crews: 0 };
-  if (state) {
-    discovery = await ensureDiscovered(c.env, sector, state).catch(() => discovery);
+  // Kick discovery in the BACKGROUND so the newcomer's page never waits on the
+  // live API — it returns instantly from the DB and the slice populates for the
+  // next view. Guarded by cache + daily budget + per-slice lock in the lib, and
+  // a no-op without a key. waitUntil keeps the Worker alive past the response.
+  const willDiscover = !!state && !!c.env.PERPLEXITY_API_KEY;
+  if (willDiscover) {
+    c.executionCtx.waitUntil(
+      ensureDiscovered(c.env, sector, state).catch((e) => {
+        console.error("discovery failed", sector, state, e);
+      }),
+    );
   }
 
   const catPlaceholders = map.categories.map(() => "?").join(",");
@@ -66,7 +73,9 @@ start.get("/:sector", async (c) => {
     venues: venues.results,
     events: events.results,
     crews,
-    discovery: { configured: !!c.env.PERPLEXITY_API_KEY, ...discovery },
+    // `pending` = discovery is running in the background; the client can re-fetch
+    // shortly to pick up freshly-found crews/events.
+    discovery: { configured: !!c.env.PERPLEXITY_API_KEY, pending: willDiscover && crews.length === 0 },
   });
 });
 

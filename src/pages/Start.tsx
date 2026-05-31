@@ -93,6 +93,15 @@ function SectorStart({ sector, onBack }: { sector: SectorId; onBack: () => void 
   }
   useEffect(() => { load(initialState); /* eslint-disable-next-line */ }, [sector]);
 
+  // Discovery runs in the background; when a slice is pending, re-fetch once
+  // after a short delay to pick up the freshly-found local crews + events.
+  useEffect(() => {
+    if (!data?.discovery.pending || !stateCode) return;
+    const t = setTimeout(() => load(stateCode), 7000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line
+  }, [data?.discovery.pending, stateCode]);
+
   async function getSetUp() {
     if (!user) {
       nav("/register", { state: { from: "/start", sector } });
@@ -225,7 +234,11 @@ function SectorStart({ sector, onBack }: { sector: SectorId; onBack: () => void 
               {data?.discovery.configured === false ? (
                 <p className="mt-3 text-sm text-white/45">Local crew discovery activates once the research key is configured.</p>
               ) : (data?.crews.length ?? 0) === 0 ? (
-                <p className="mt-3 text-sm text-white/45">No crews mapped here yet — we're reaching out into {stateCode}. Check back soon.</p>
+                <p className="mt-3 text-sm text-white/45">
+                  {data?.discovery.pending
+                    ? `Scanning ${stateCode} for local crews right now — hang tight, they'll appear in a moment.`
+                    : `No crews mapped here yet — we're reaching out into ${stateCode}. Check back soon.`}
+                </p>
               ) : (
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   {data!.crews.map((cr) => (
