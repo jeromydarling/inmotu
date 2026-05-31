@@ -75,6 +75,8 @@ export const api = {
   registerForEvent: (id: string, body: Record<string, unknown>) =>
     req<{ ok: true }>(`/events/${id}/register`, { method: "POST", body: JSON.stringify(body) }),
   myRegistrations: () => req<{ registrations: Registration[] }>("/events/registrations/mine"),
+  eventResults: (slug: string, refresh = false) =>
+    req<{ linked: boolean; sessions: any[] }>(`/events/${slug}/results${refresh ? "?refresh=1" : ""}`),
 
   // tracks
   tracks: (params: Record<string, string> = {}) =>
@@ -87,6 +89,8 @@ export const api = {
   createRider: (body: Record<string, unknown>) =>
     req<{ rider: Rider }>("/riders", { method: "POST", body: JSON.stringify(body) }),
   deleteRider: (id: string) => req<{ ok: true }>(`/riders/${id}`, { method: "DELETE" }),
+  riderResults: (id: string) =>
+    req<{ results: any[] }>(`/riders/${id}/results`),
   budgetSummary: () => req<{ summary: BudgetRow[] }>("/riders/budget/summary"),
   addBudget: (body: Record<string, unknown>) =>
     req<{ ok: true }>("/riders/budget", { method: "POST", body: JSON.stringify(body) }),

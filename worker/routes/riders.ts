@@ -64,6 +64,29 @@ riders.post("/", async (c) => {
   return c.json({ rider: row }, 201);
 });
 
+// A rider's live/timed results across events — matched from MYLAPS/Speedhive
+// (or manually-entered) classifications via rider_id.
+riders.get("/:id/results", async (c) => {
+  const id = c.req.param("id");
+  const owns = await c.env.DB.prepare("SELECT 1 FROM riders WHERE id = ? AND user_id = ?")
+    .bind(id, c.var.user!.id)
+    .first();
+  if (!owns) return err(c, "not_found", "Rider not found");
+  const { results } = await c.env.DB.prepare(
+    `SELECT lr.position, lr.start_number, lr.laps, lr.total_time, lr.best_lap, lr.gap, lr.status,
+            s.name AS session_name, s.race_class, s.session_type, s.started_at,
+            e.slug AS event_slug, e.title AS event_title, e.starts_at AS event_at
+     FROM live_results lr
+     JOIN race_sessions s ON s.id = lr.session_id
+     JOIN events e ON e.id = s.event_id
+     WHERE lr.rider_id = ?
+     ORDER BY COALESCE(s.started_at, e.starts_at) DESC LIMIT 100`,
+  )
+    .bind(id)
+    .all();
+  return c.json({ results });
+});
+
 riders.delete("/:id", async (c) => {
   await c.env.DB.prepare("DELETE FROM riders WHERE id = ? AND user_id = ?")
     .bind(c.req.param("id"), c.var.user!.id)

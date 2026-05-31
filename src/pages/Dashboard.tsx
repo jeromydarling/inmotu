@@ -266,8 +266,54 @@ function RidersTab() {
                 <span className="chip">{titleCase(r.discipline || "")}</span>
                 {r.skill_level && <span className="chip">{titleCase(r.skill_level)}</span>}
               </div>
+              <RiderResults riderId={r.id} />
             </div>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Recent timed results for a rider, matched from MYLAPS/Speedhive classifications.
+function RiderResults({ riderId }: { riderId: string }) {
+  const [open, setOpen] = useState(false);
+  const [rows, setRows] = useState<any[] | null>(null);
+
+  function toggle() {
+    const next = !open;
+    setOpen(next);
+    if (next && rows === null) {
+      api.riderResults(riderId).then((r) => setRows(r.results)).catch(() => setRows([]));
+    }
+  }
+
+  return (
+    <div className="mt-3 border-t border-white/[0.06] pt-3">
+      <button onClick={toggle} className="text-xs font-semibold text-white/55 hover:text-white">
+        {open ? "▾" : "▸"} Recent results
+      </button>
+      {open && (
+        <div className="mt-2">
+          {rows === null ? (
+            <p className="text-xs text-white/35">Loading…</p>
+          ) : rows.length === 0 ? (
+            <p className="text-xs text-white/35">
+              No timed results yet. Results sync automatically from MYLAPS/Speedhive once an event is linked.
+            </p>
+          ) : (
+            <ul className="space-y-1.5">
+              {rows.slice(0, 5).map((r, i) => (
+                <li key={i} className="flex items-center justify-between gap-2 text-xs">
+                  <span className="truncate text-white/70">
+                    <span className="font-display font-bold text-ignition-300">P{r.position ?? "—"}</span>{" "}
+                    {r.event_title} · {r.session_name}
+                  </span>
+                  <span className="shrink-0 font-mono text-white/40">{r.best_lap ?? ""}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
     </div>

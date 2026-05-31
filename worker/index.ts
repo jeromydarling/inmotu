@@ -28,6 +28,7 @@ import onboarding from "./routes/onboarding";
 import { ingestFromFeeds } from "./ingest";
 import { runDeadlineSweep } from "./lib/notify";
 import { refreshLegislation } from "./lib/perplexity";
+import { refreshLiveResults } from "./lib/speedhive";
 import { renderWithMeta } from "./lib/seo";
 
 const app = new Hono<{ Bindings: Env; Variables: Vars }>();
@@ -170,6 +171,8 @@ export default {
         const deadlines = await runDeadlineSweep(env);
         // Refresh live Right-to-Race legislation (no-op without a Perplexity key).
         const legislation = await refreshLegislation(env);
+        // Refresh MYLAPS/Speedhive live results for events around now.
+        const results = await refreshLiveResults(env);
         const cutoff = Math.floor(Date.now() / 1000) - 7 * 24 * 60 * 60;
         const reap = await env.DB.prepare(
           "DELETE FROM users WHERE is_demo = 1 AND created_at < ?",
@@ -178,7 +181,7 @@ export default {
           .run();
         console.log(
           "cron run",
-          JSON.stringify({ ingest, deadlines, legislation, demoReaped: reap.meta.changes }),
+          JSON.stringify({ ingest, deadlines, legislation, results, demoReaped: reap.meta.changes }),
         );
       })(),
     );

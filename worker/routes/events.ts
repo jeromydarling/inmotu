@@ -3,6 +3,8 @@ import type { Env, Vars } from "../types";
 import { now, uid } from "../lib/util";
 import { requireAuth } from "../auth/middleware";
 import { err } from "../lib/http";
+import { ownsEvent } from "../db";
+import { syncEventResults, type ResultSession } from "../lib/speedhive";
 
 const events = new Hono<{ Bindings: Env; Variables: Vars }>();
 
@@ -164,6 +166,87 @@ events.get("/registrations/mine", requireAuth, async (c) => {
     .bind(c.var.user!.id)
     .all();
   return c.json({ registrations: results });
+});
+
+// GET /api/events/:slug/results — live standings (sessions + classification).
+// ?refresh=1 triggers a Speedhive sync first (rate-limited by the client TTL).
+events.get("/:slug/results", async (c) => {
+  const ev = await c.env.DB.prepare(
+    "SELECT id, title, speedhive_event_id FROM events WHERE slug = ?",
+  )
+    .bind(c.req.param("slug"))
+    .first<{ id: string; title: string; speedhive_event_id: string | null }>();
+  if (!ev) return c.json({ error: "Event not found" }, 404);
+
+  if (c.req.query("refresh") === "1" && ev.speedhive_event_id) {
+    await syncEventResults(c.env, ev.id).catch(() => {});
+  }
+
+  const { results: sessions } = await c.env.DB.prepare(
+    `SELECT s.id, s.name, s.race_class, s.session_type, s.status, s.started_at, s.source, s.refreshed_at,
+            (SELECT COUNT(*) FROM live_results WHERE session_id = s.id) AS entries
+     FROM race_sessions s WHERE s.event_id = ?
+     ORDER BY s.started_at IS NULL, s.started_at DESC, s.created_at DESC`,
+  )
+    .bind(ev.id)
+    .all<Record<string, any>>();
+
+  const { results: rows } = await c.env.DB.prepare(
+    `SELECT lr.*, r.name AS rider_name FROM live_results lr
+     LEFT JOIN riders r ON r.id = lr.rider_id
+     WHERE lr.session_id IN (SELECT id FROM race_sessions WHERE event_id = ?)
+     ORDER BY lr.position IS NULL, lr.position ASC`,
+  )
+    .bind(ev.id)
+    .all<Record<string, any>>();
+
+  const bySession = new Map<string, any[]>();
+  for (const r of rows) {
+    const list = bySession.get(r.session_id) ?? [];
+    list.push(r);
+    bySession.set(r.session_id, list);
+  }
+
+  return c.json({
+    linked: !!ev.speedhive_event_id,
+    sessions: sessions.map((s) => ({ ...s, rows: bySession.get(s.id) ?? [] })),
+  });
+});
+
+// POST /api/events/:id/speedhive — operator/admin links the event to Speedhive.
+events.post("/:id/speedhive", requireAuth, async (c) => {
+  const id = c.req.param("id");
+  if (c.var.user!.role !== "admin" && !(await ownsEvent(c.env, id, c.var.user!.id)))
+    return err(c, "not_found", "Event not found");
+  const b = await c.req.json().catch(() => ({}));
+  await c.env.DB.prepare(
+    "UPDATE events SET speedhive_event_id = ?, speedhive_org_id = ? WHERE id = ?",
+  )
+    .bind(b.speedhive_event_id ? String(b.speedhive_event_id) : null, b.speedhive_org_id ? String(b.speedhive_org_id) : null, id)
+    .run();
+  return c.json({ ok: true });
+});
+
+// POST /api/events/:id/results/sync — operator/admin. Pull from Speedhive, or
+// upsert a manually-entered { sessions:[{name,race_class,rows:[...]}] } payload.
+events.post("/:id/results/sync", requireAuth, async (c) => {
+  const id = c.req.param("id");
+  if (c.var.user!.role !== "admin" && !(await ownsEvent(c.env, id, c.var.user!.id)))
+    return err(c, "not_found", "Event not found");
+  const b = await c.req.json().catch(() => ({}));
+  const injected: ResultSession[] | undefined = Array.isArray(b.sessions)
+    ? b.sessions.map((s: any) => ({
+        source_session_id: s.source_session_id ?? null,
+        name: String(s.name ?? "Session"),
+        race_class: s.race_class ?? undefined,
+        session_type: s.session_type ?? undefined,
+        status: s.status ?? undefined,
+        started_at: s.started_at ?? undefined,
+        rows: Array.isArray(s.rows) ? s.rows : [],
+      }))
+    : undefined;
+  const r = await syncEventResults(c.env, id, injected);
+  return c.json({ ok: true, ...r });
 });
 
 export default events;

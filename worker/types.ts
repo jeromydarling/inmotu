@@ -25,6 +25,8 @@ export interface Env {
   RESEND_API_KEY?: string; // email provider key (Resend)
   PERPLEXITY_API_KEY?: string; // Perplexity Sonar — live legislation + event discovery
   GOOGLE_CIVIC_API_KEY?: string; // legislator lookup by address/ZIP
+  SPEEDHIVE_API_BASE?: string; // override Speedhive Event Results API base URL/version
+  SPEEDHIVE_API_KEY?: string; // optional bearer for MYLAPS/Speedhive results API
 }
 
 // Hono context variables

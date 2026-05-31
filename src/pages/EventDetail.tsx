@@ -120,6 +120,8 @@ export default function EventDetail() {
               </p>
             </div>
           )}
+
+          <LiveResults slug={e.slug} />
         </div>
 
         {/* Action rail */}
@@ -221,6 +223,118 @@ function RegisterBox({ eventId, fee }: { eventId: string; fee: number | null }) 
         Travel miles feed the track's economic-impact report.
       </p>
     </form>
+  );
+}
+
+// Live timing & results, powered by MYLAPS/Speedhive (or operator entry).
+// Auto-refreshes while any session is still running; silent if there's nothing.
+function LiveResults({ slug }: { slug: string }) {
+  const [data, setData] = useState<{ linked: boolean; sessions: any[] } | null>(null);
+  const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    let timer: any;
+    let cancelled = false;
+    const load = async (refresh: boolean) => {
+      try {
+        const r = await api.eventResults(slug, refresh);
+        if (cancelled) return;
+        setData(r);
+        // poll while a session is live
+        const running = r.sessions.some((s) => s.status === "running");
+        if (running) timer = setTimeout(() => load(true), 20000);
+      } catch {
+        if (!cancelled) setData({ linked: false, sessions: [] });
+      }
+    };
+    load(true);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [slug]);
+
+  if (!data || (data.sessions.length === 0 && !data.linked)) return null;
+
+  const s = data.sessions[active];
+  return (
+    <div className="panel mt-6 p-6">
+      <div className="flex items-center justify-between">
+        <p className="eyebrow">Live results</p>
+        <span className="flex items-center gap-1.5 text-[11px] text-white/40">
+          <span className="text-ignition-300">MYLAPS · Speedhive</span>
+        </span>
+      </div>
+
+      {data.sessions.length === 0 ? (
+        <p className="mt-3 text-sm text-white/45">
+          Linked to Speedhive — results will appear here once timing is live.
+        </p>
+      ) : (
+        <>
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {data.sessions.map((sess, i) => (
+              <button
+                key={sess.id}
+                onClick={() => setActive(i)}
+                className={`chip ${i === active ? "bg-ignition/20 text-ignition-300" : ""}`}
+              >
+                {sess.name}
+                {sess.race_class ? ` · ${sess.race_class}` : ""}
+                {sess.status === "running" && (
+                  <span className="ml-1.5 inline-block h-1.5 w-1.5 animate-pulse-live rounded-full bg-flag-red align-middle" />
+                )}
+              </button>
+            ))}
+          </div>
+
+          {s && (
+            <div className="mt-4 overflow-x-auto">
+              {s.status === "running" && (
+                <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-flag-red">
+                  <span className="h-2 w-2 animate-pulse-live rounded-full bg-flag-red" /> LIVE · updating
+                </div>
+              )}
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-[11px] uppercase tracking-wide text-white/35">
+                    <th className="py-1.5 pr-2">Pos</th>
+                    <th className="py-1.5 pr-2">#</th>
+                    <th className="py-1.5 pr-3">Competitor</th>
+                    <th className="py-1.5 pr-2 text-right">Laps</th>
+                    <th className="py-1.5 pr-2 text-right">Best</th>
+                    <th className="py-1.5 text-right">Gap</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {s.rows.length === 0 ? (
+                    <tr><td colSpan={6} className="py-4 text-center text-white/40">No times posted yet.</td></tr>
+                  ) : (
+                    s.rows.map((r: any) => (
+                      <tr key={r.id} className="border-t border-white/[0.06]">
+                        <td className="py-1.5 pr-2 font-display font-bold text-white">{r.position ?? "—"}</td>
+                        <td className="py-1.5 pr-2 text-white/55">{r.start_number ?? ""}</td>
+                        <td className="py-1.5 pr-3">
+                          {r.rider_id ? (
+                            <span className="font-semibold text-ignition-300">{r.competitor} ★</span>
+                          ) : (
+                            <span className="text-white/80">{r.competitor}</span>
+                          )}
+                        </td>
+                        <td className="py-1.5 pr-2 text-right text-white/55">{r.laps ?? "—"}</td>
+                        <td className="py-1.5 pr-2 text-right font-mono text-xs text-white/70">{r.best_lap ?? "—"}</td>
+                        <td className="py-1.5 text-right font-mono text-xs text-white/55">{r.gap ?? "—"}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+              <p className="mt-2 text-[11px] text-white/30">★ = a rider on your Pit Board</p>
+            </div>
+          )}
+        </>
+      )}
+    </div>
   );
 }
 
