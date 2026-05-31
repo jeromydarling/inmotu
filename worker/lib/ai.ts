@@ -77,3 +77,63 @@ export async function generateBio(
   const bio = (out.match(/BIO:\s*([\s\S]+)/i)?.[1] ?? "").trim();
   return { tagline, bio };
 }
+
+/** Pull the first JSON array/object out of a model response (handles fences). */
+function extractJson<T>(s: string, fallback: T): T {
+  const fenced = s.match(/```(?:json)?\s*([\s\S]*?)```/);
+  const candidate = fenced ? fenced[1] : s;
+  const start = candidate.search(/[[{]/);
+  if (start === -1) return fallback;
+  // try progressively from the first bracket to the last matching close
+  const sliced = candidate.slice(start);
+  const lastClose = Math.max(sliced.lastIndexOf("]"), sliced.lastIndexOf("}"));
+  if (lastClose === -1) return fallback;
+  try {
+    return JSON.parse(sliced.slice(0, lastClose + 1)) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+export interface ImportedRider {
+  name: string;
+  number?: string;
+  race_class?: string;
+  discipline?: string;
+}
+export interface ImportedEvent {
+  title: string;
+  date?: string; // ISO yyyy-mm-dd if the model can infer it
+  track_name?: string;
+  city?: string;
+  state?: string;
+  discipline?: string;
+}
+
+/**
+ * AI-assisted import: turn pasted text (a schedule, a roster, a Facebook
+ * event, a forwarded email) into structured riders + events. Best-effort —
+ * the UI lets the user review/edit before anything is saved.
+ */
+export async function extractImport(
+  env: Env,
+  text: string,
+): Promise<{ riders: ImportedRider[]; events: ImportedEvent[] }> {
+  const clipped = text.slice(0, 6000);
+  const sys =
+    "You extract structured data from messy text about grassroots motorsports " +
+    "(motocross, autocross, road racing, karting, etc.). Output STRICT JSON only — no prose.";
+  const user =
+    `From the text below, extract any RIDERS (people who race) and EVENTS (races/practices).\n` +
+    `Return JSON exactly like:\n` +
+    `{"riders":[{"name":"","number":"","race_class":"","discipline":""}],` +
+    `"events":[{"title":"","date":"YYYY-MM-DD","track_name":"","city":"","state":"","discipline":""}]}\n` +
+    `Rules: omit fields you can't determine. Use 2-letter state codes. If a year isn't given, assume the next occurrence. ` +
+    `If there are no riders or no events, use an empty array. Output ONLY the JSON.\n\nTEXT:\n${clipped}`;
+  const raw = await generateText(env, sys, user);
+  const parsed = extractJson<{ riders?: ImportedRider[]; events?: ImportedEvent[] }>(raw, {});
+  return {
+    riders: Array.isArray(parsed.riders) ? parsed.riders.filter((r) => r && r.name).slice(0, 50) : [],
+    events: Array.isArray(parsed.events) ? parsed.events.filter((e) => e && e.title).slice(0, 50) : [],
+  };
+}

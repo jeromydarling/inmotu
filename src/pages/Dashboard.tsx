@@ -15,6 +15,7 @@ import MaintenancePanel from "./panels/MaintenancePanel";
 import SponsorsPanel from "./panels/SponsorsPanel";
 import StudioPanel from "./panels/StudioPanel";
 import TeamPagePanel from "./panels/TeamPagePanel";
+import { OnboardingChecklist } from "../components/OnboardingChecklist";
 
 type Tab =
   | "calendar"
@@ -70,6 +71,8 @@ export default function Dashboard() {
           <span className="text-sm text-white/45">{user?.email}</span>
         </div>
       </header>
+
+      <OnboardingChecklist firstName={user?.full_name.split(" ")[0]} />
 
       <div className="mb-8 flex gap-1 overflow-x-auto rounded-xl border border-white/[0.06] bg-carbon-900/50 p-1">
         {TABS.map((t) => {

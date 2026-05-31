@@ -244,6 +244,22 @@ export const api = {
   pushUnsubscribe: (endpoint: string) =>
     req<{ ok: true }>("/notifications/unsubscribe", { method: "POST", body: JSON.stringify({ endpoint }) }),
 
+  // onboarding + AI import
+  onboardingStatus: () =>
+    req<{ steps: Record<string, boolean>; done: number; total: number; role: string; plan: string }>(
+      "/onboarding/status",
+    ),
+  importParse: (text: string) =>
+    req<{ riders: any[]; events: any[]; note?: string }>("/onboarding/import/parse", {
+      method: "POST",
+      body: JSON.stringify({ text }),
+    }),
+  importCommit: (riders: any[], events: any[]) =>
+    req<{ ok: true; ridersAdded: number; eventsAdded: number }>("/onboarding/import/commit", {
+      method: "POST",
+      body: JSON.stringify({ riders, events }),
+    }),
+
   // meta + billing
   capabilities: () =>
     req<{
