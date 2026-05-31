@@ -73,8 +73,21 @@ ladder.post("/progress", async (c) => {
   if (!(await ownsRider(c.env, rider_id, c.var.user!.id))) return err(c, "not_found", "Rider not found");
 
   const result_pos = b.result_pos != null ? Number(b.result_pos) : null;
-  // Top-6 advances in most AMA area/regional formats — sensible default.
-  const advanced = b.advanced != null ? (b.advanced ? 1 : 0) : result_pos != null && result_pos <= 6 ? 1 : 0;
+  // Advance threshold is per-stage (pos_advances); fall back to top-6. Explicit
+  // `advanced` in the body always wins. This makes advancement data-driven so
+  // each sport's real rule (BMX top-8/10, drag points) works without hardcoding.
+  let advanced: number;
+  if (b.advanced != null) {
+    advanced = b.advanced ? 1 : 0;
+  } else if (result_pos == null) {
+    advanced = 0;
+  } else {
+    const stage = await c.env.DB.prepare("SELECT pos_advances FROM ladder_stages WHERE id = ?")
+      .bind(stage_id)
+      .first<{ pos_advances: number | null }>();
+    const threshold = stage?.pos_advances ?? 6;
+    advanced = result_pos <= threshold ? 1 : 0;
+  }
 
   await c.env.DB.prepare(
     `INSERT INTO rider_ladder_progress (id, rider_id, stage_id, event_id, result_pos, advanced, recorded_at)

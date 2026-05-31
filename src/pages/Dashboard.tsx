@@ -40,7 +40,7 @@ const TABS: {
   blurb?: string;
 }[] = [
   { id: "calendar", label: "Calendar", cap: null },
-  { id: "ladder", label: "Ladder", cap: "ladder", plan: "family", blurb: "Track each rider's road to Nationals — log results and watch their qualifying status update live." },
+  { id: "ladder", label: "Ladder", cap: "ladder", plan: "family", blurb: "Track each racer's road to the top — log results and watch their qualifying status update live, tuned to your sport's real ladder." },
   { id: "riders", label: "Riders", cap: null },
   { id: "photos", label: "Photos", cap: "photos", plan: "family", blurb: "Build a season photo timeline and turn it into a printed yearbook." },
   { id: "budget", label: "Budget", cap: "budget", plan: "family", blurb: "Know your real season costs by category, year over year." },

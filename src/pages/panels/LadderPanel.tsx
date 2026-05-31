@@ -23,8 +23,8 @@ export default function LadderPanel() {
   if (riders.length === 0)
     return (
       <EmptyState
-        title="Add a rider to track the ladder"
-        hint="Head to the Riders tab and add a racer, then come back to chart their road to Nationals."
+        title="Add a racer to track the ladder"
+        hint="Head to the Riders tab and add a racer, then come back to chart their road to the top."
       />
     );
 
@@ -73,9 +73,16 @@ function RiderLadder({ riderId }: { riderId: string }) {
 
   if (!data) return <Spinner className="mx-auto h-6 w-6" />;
   if (!data.ladder)
-    return <EmptyState title="No ladder for this discipline yet" hint="Ladder tracking is live for motocross this season." />;
+    return (
+      <EmptyState
+        title="No ladder for this discipline yet"
+        hint="We're building out the progression path for this sport. Motocross, BMX, and drag racing are live now."
+      />
+    );
 
-  const cleared = data.stages.filter((s) => s.advanced).length;
+  const isPoints = data.ladder.progression === "track_points";
+  // A cleared stage = advancement (ladder) or "you made it" (track points).
+  const reached = data.stages.filter((s) => s.advanced).length;
 
   return (
     <div>
@@ -88,9 +95,9 @@ function RiderLadder({ riderId }: { riderId: string }) {
         </div>
         <div className="text-right">
           <div className="font-display text-3xl font-extrabold text-flag-green">
-            {cleared}/{data.stages.length}
+            {reached}/{data.stages.length}
           </div>
-          <div className="text-xs text-white/45">stages cleared</div>
+          <div className="text-xs text-white/45">{isPoints ? "rungs reached" : "stages cleared"}</div>
         </div>
       </div>
 
@@ -111,24 +118,27 @@ function RiderLadder({ riderId }: { riderId: string }) {
                   advanced ? "border-flag-green/25" : has ? "border-amber/25" : ""
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <div>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-xs text-white/30">0{i + 1}</span>
                       <span className="font-display text-lg font-bold text-white">{s.name}</span>
                     </div>
-                    <div className="text-xs text-white/45">{s.region}</div>
+                    {s.region && <div className="text-xs text-white/45">{s.region}</div>}
+                    {s.advance_note && <div className="mt-1 text-xs text-white/40">{s.advance_note}</div>}
                   </div>
                   {has ? (
-                    <div className="flex items-center gap-2">
+                    <div className="flex shrink-0 items-center gap-2">
                       {s.result_pos != null && <Badge tone="muted">P{s.result_pos}</Badge>}
-                      <Badge tone={advanced ? "green" : "amber"}>{advanced ? "Advanced ✓" : "Recorded"}</Badge>
+                      <Badge tone={advanced ? "green" : "amber"}>
+                        {advanced ? (isPoints ? "Made it ✓" : "Advanced ✓") : "Logged"}
+                      </Badge>
                       <button onClick={() => clear(s.progress_id)} className="text-white/30 hover:text-flag-red" aria-label="Clear">
                         ✕
                       </button>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2">
+                    <div className="flex shrink-0 items-center gap-2">
                       <input
                         type="number"
                         min={1}
@@ -149,8 +159,9 @@ function RiderLadder({ riderId }: { riderId: string }) {
         })}
       </div>
       <p className="mt-4 text-xs text-white/40">
-        Top-6 finishes advance automatically in standard AMA area/regional formats. Log a result to
-        light up the next rung.
+        {isPoints
+          ? "Log how you finished at each step — bank your points, make the team, and chase the title. Each cleared rung lights up the next."
+          : "Log a finish at each stage — top finishers advance automatically and light up the next rung on the way to the top."}
       </p>
     </div>
   );

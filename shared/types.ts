@@ -211,11 +211,21 @@ export interface LadderStage {
   name: string;
   stage_order: number;
   region: string | null;
+  advance_note?: string | null;
+  pos_advances?: number | null;
   progress_id?: string | null;
   event_id?: string | null;
   result_pos?: number | null;
   advanced?: number;
   recorded_at?: number | null;
+}
+
+export interface Ladder {
+  id: string;
+  name: string;
+  discipline: string | null;
+  season: number;
+  progression?: "ladder" | "track_points";
 }
 
 export interface BudgetRow {
