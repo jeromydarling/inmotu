@@ -161,6 +161,26 @@ export const api = {
   deleteRider: (id: string) => req<{ ok: true }>(`/riders/${id}`, { method: "DELETE" }),
   updateRider: (id: string, body: Record<string, unknown>) =>
     req<{ rider: Rider }>(`/riders/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  publishRider: (id: string, publish: boolean) =>
+    req<{ ok: true; published: boolean; slug: string | null }>(`/riders/${id}/publish`, {
+      method: "POST",
+      body: JSON.stringify({ publish }),
+    }),
+
+  // public racer directory
+  racers: (params: Record<string, string> = {}) =>
+    req<{ racers: { slug: string; name: string; number: string | null; discipline: string | null; race_class: string | null; skill_level: string | null; hometown: string | null; wins: number; result_count: number }[] }>(
+      `/racers?${new URLSearchParams(params)}`,
+    ),
+  racerStats: () =>
+    req<{ total: number; byDiscipline: { discipline: string; n: number }[] }>("/racers/stats"),
+  racer: (slug: string) =>
+    req<{
+      racer: { slug: string; name: string; number: string | null; discipline: string | null; race_class: string | null; skill_level: string | null; wins: number; bio: string | null; hometown: string | null };
+      results: any[];
+      photos: { id: string; caption: string | null }[];
+      stats: { events: number; results: number; podiums: number; wins: number };
+    }>(`/racers/${slug}`),
   riderResults: (id: string) =>
     req<{ results: any[] }>(`/riders/${id}/results`),
   budgetSummary: () => req<{ summary: BudgetRow[] }>("/riders/budget/summary"),

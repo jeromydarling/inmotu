@@ -271,10 +271,56 @@ function RidersTab() {
                 {r.skill_level && <span className="chip">{titleCase(r.skill_level)}</span>}
               </div>
               <RiderResults riderId={r.id} />
+              <PublishToggle rider={r} onChange={load} />
             </div>
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// Opt a racer into the public directory (privacy-first: off by default).
+function PublishToggle({ rider, onChange }: { rider: any; onChange: () => void }) {
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const published = !!rider.published;
+
+  async function toggle() {
+    setBusy(true);
+    try {
+      const r = await api.publishRider(rider.id, !published);
+      toast.success(r.published ? "Public profile is live." : "Profile set to private.");
+      onChange();
+    } catch {
+      toast.error("Couldn't update. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-3 flex items-center justify-between border-t border-white/[0.06] pt-3">
+      <div className="min-w-0">
+        <div className="text-xs font-semibold text-white/70">Public profile</div>
+        {published && rider.slug ? (
+          <a href={`/racers/${rider.slug}`} target="_blank" rel="noreferrer" className="text-[11px] text-ignition-300 hover:underline">
+            /racers/{rider.slug} ↗
+          </a>
+        ) : (
+          <div className="text-[11px] text-white/40">Private — only you can see this racer</div>
+        )}
+      </div>
+      <button
+        type="button"
+        disabled={busy}
+        onClick={toggle}
+        className={`relative h-6 w-11 shrink-0 rounded-full transition ${published ? "bg-flag-green" : "bg-white/15"}`}
+        aria-pressed={published}
+        aria-label="Toggle public profile"
+      >
+        <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition ${published ? "left-[22px]" : "left-0.5"}`} />
+      </button>
     </div>
   );
 }

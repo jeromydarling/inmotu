@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import type { Env, Vars } from "../types";
 import { requireAuth } from "../auth/middleware";
-import { now, uid } from "../lib/util";
+import { now, uid, slugify } from "../lib/util";
 import { err } from "../lib/http";
 import { FREE_RIDER_LIMIT, planMeets, requirePlan } from "../lib/entitlements";
 
@@ -106,12 +106,47 @@ riders.patch("/:id", async (c) => {
     sets.push("skill_level = ?");
     binds.push(b.skill_level);
   }
+  // Public-profile fields.
+  if (typeof b.bio === "string") (sets.push("bio = ?"), binds.push(b.bio.slice(0, 600)));
+  if (typeof b.hometown === "string") (sets.push("hometown = ?"), binds.push(b.hometown.slice(0, 80)));
   if (sets.length === 0) return err(c, "validation", "nothing to update");
   await c.env.DB.prepare(`UPDATE riders SET ${sets.join(", ")} WHERE id = ?`)
     .bind(...binds, id)
     .run();
   const row = await c.env.DB.prepare("SELECT * FROM riders WHERE id = ?").bind(id).first();
   return c.json({ rider: row });
+});
+
+// Opt a racer into (or out of) the public directory. On first publish we mint a
+// stable, unique slug from their name; unpublish just flips the flag (keeps the
+// slug so the URL is stable if they come back).
+riders.post("/:id/publish", async (c) => {
+  const id = c.req.param("id");
+  const rider = await c.env.DB.prepare("SELECT id, name, slug FROM riders WHERE id = ? AND user_id = ?")
+    .bind(id, c.var.user!.id)
+    .first<{ id: string; name: string; slug: string | null }>();
+  if (!rider) return err(c, "not_found", "Rider not found");
+  const b = await c.req.json().catch(() => ({}));
+  const publish = b.publish !== false; // default true
+
+  let slug = rider.slug;
+  if (publish && !slug) {
+    // Mint a unique slug: base from name, append a short suffix on collision.
+    const base = slugify(rider.name, { maxLen: 40 }) || "racer";
+    slug = base;
+    for (let i = 0; i < 5; i++) {
+      const taken = await c.env.DB.prepare("SELECT 1 FROM riders WHERE slug = ? AND id != ?")
+        .bind(slug, id)
+        .first();
+      if (!taken) break;
+      slug = `${base}-${uid().slice(0, 5)}`;
+    }
+  }
+
+  await c.env.DB.prepare("UPDATE riders SET published = ?, slug = ? WHERE id = ?")
+    .bind(publish ? 1 : 0, slug, id)
+    .run();
+  return c.json({ ok: true, published: publish, slug });
 });
 
 riders.delete("/:id", async (c) => {

@@ -28,6 +28,7 @@ import onboarding from "./routes/onboarding";
 import mapRoutes from "./routes/map";
 import venues from "./routes/venues";
 import start from "./routes/start";
+import racers from "./routes/racers";
 import { ingestFromFeeds } from "./ingest";
 import { runDeadlineSweep } from "./lib/notify";
 import { refreshLegislation } from "./lib/perplexity";
@@ -70,6 +71,7 @@ api.route("/onboarding", onboarding);
 api.route("/map", mapRoutes);
 api.route("/venues", venues);
 api.route("/start", start);
+api.route("/racers", racers);
 
 api.notFound((c) => c.json({ error: "Not found" }, 404));
 api.onError((err, c) => {
@@ -160,6 +162,32 @@ app.get("/events/:slug", async (c) => {
       ...(e.track_name
         ? { location: { "@type": "Place", name: e.track_name, address: [e.city, e.state].filter(Boolean).join(", ") } }
         : {}),
+    },
+  });
+});
+
+// Racer profile (public, opt-in directory)
+app.get("/racers/:slug", async (c) => {
+  const r = await c.env.DB.prepare(
+    "SELECT name, number, discipline, race_class, hometown FROM riders WHERE slug = ? AND published = 1",
+  )
+    .bind(c.req.param("slug"))
+    .first<Record<string, any>>();
+  if (!r) return c.env.ASSETS.fetch(c.req.raw);
+  const o = origin(c);
+  const num = r.number ? `#${r.number} ` : "";
+  return renderWithMeta(c.env, c.req.raw, {
+    title: `${num}${r.name} | inmotu`,
+    description: `${r.name}${r.race_class ? ` · ${r.race_class}` : ""}${
+      r.hometown ? ` · ${r.hometown}` : ""
+    } — racing profile, results, and photos on inmotu.`,
+    url: `${o}/racers/${c.req.param("slug")}`,
+    image: `${o}/api/img/disc-${r.discipline || "motocross"}`,
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "Person",
+      name: r.name,
+      ...(r.hometown ? { homeLocation: { "@type": "Place", name: r.hometown } } : {}),
     },
   });
 });

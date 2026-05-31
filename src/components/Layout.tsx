@@ -9,6 +9,7 @@ const navItems = [
   { to: "/grid", label: "The Grid" },
   { to: "/map", label: "Map" },
   { to: "/tracks", label: "Tracks" },
+  { to: "/racers", label: "Racers" },
   { to: "/standings", label: "Standings" },
   { to: "/frontline", label: "Frontline" },
   { to: "/rules", label: "Rules" },

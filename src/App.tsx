@@ -8,6 +8,8 @@ import Landing from "./pages/Landing";
 import Grid from "./pages/Grid";
 import CompetitionMap from "./pages/CompetitionMap";
 import Start from "./pages/Start";
+import Racers from "./pages/Racers";
+import RacerProfile from "./pages/RacerProfile";
 import EventDetail from "./pages/EventDetail";
 import Tracks from "./pages/Tracks";
 import TrackDetail from "./pages/TrackDetail";
@@ -61,6 +63,8 @@ export default function App() {
         <Route path="/grid" element={<Grid />} />
         <Route path="/map" element={<CompetitionMap />} />
         <Route path="/start" element={<Start />} />
+        <Route path="/racers" element={<Racers />} />
+        <Route path="/racers/:slug" element={<RacerProfile />} />
         <Route path="/events/:slug" element={<EventDetail />} />
         <Route path="/tracks" element={<Tracks />} />
         <Route path="/tracks/:slug" element={<TrackDetail />} />
