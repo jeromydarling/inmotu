@@ -27,6 +27,11 @@ export interface Env {
   GOOGLE_CIVIC_API_KEY?: string; // legislator lookup by address/ZIP
   SPEEDHIVE_API_BASE?: string; // override Speedhive Event Results API base URL/version
   SPEEDHIVE_API_KEY?: string; // optional bearer for MYLAPS/Speedhive results API
+  // Event crawler (CF-native first, Firecrawl-pluggable):
+  CLOUDFLARE_ACCOUNT_ID?: string; // for Browser Rendering REST API
+  CLOUDFLARE_API_TOKEN?: string; // Browser Rendering token (Workers AI scope)
+  FIRECRAWL_API_KEY?: string; // optional fallback for hard/anti-bot sources
+  CRAWL_SOURCES?: string; // json: [{url, region?, discipline?, provider?}]
 }
 
 // Hono context variables

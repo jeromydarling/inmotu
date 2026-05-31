@@ -3,6 +3,7 @@ import type { Env, Vars } from "../types";
 import { ingestEvents, ingestFromFeeds, type FeedEvent } from "../ingest";
 import { requireRole } from "../auth/middleware";
 import { refreshLegislation, refreshDiscoveredEvents } from "../lib/perplexity";
+import { crawlSources, type CrawlSource } from "../lib/crawl";
 
 // Admin tools — manual event ingestion (same engine the Cron Trigger runs).
 const admin = new Hono<{ Bindings: Env; Variables: Vars }>();
@@ -36,6 +37,22 @@ admin.post("/discover-events", async (c) => {
     : ["Minnesota", "Wisconsin", "Iowa"];
   const r = await refreshDiscoveredEvents(c.env, regions);
   return c.json({ ok: true, ...r, configured: !!c.env.PERPLEXITY_API_KEY });
+});
+
+// Crawl web sources into reviewable events. Body { sources:[{url,region?,
+// discipline?,provider?}] } overrides the configured CRAWL_SOURCES.
+admin.post("/crawl", async (c) => {
+  const b = await c.req.json().catch(() => ({}));
+  const sources: CrawlSource[] | undefined = Array.isArray(b.sources) ? b.sources : undefined;
+  const r = await crawlSources(c.env, sources);
+  return c.json({
+    ok: true,
+    ...r,
+    providers: {
+      browser: !!(c.env.CLOUDFLARE_ACCOUNT_ID && c.env.CLOUDFLARE_API_TOKEN),
+      firecrawl: !!c.env.FIRECRAWL_API_KEY,
+    },
+  });
 });
 
 // Approve / reject AI-discovered events.
