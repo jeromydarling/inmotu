@@ -1,5 +1,6 @@
 import type { Env } from "../types";
 import { now, uid } from "./util";
+import { sonar, firstJson } from "./perplexity";
 
 // National venue canvas — the map's foundation. Imports every US motorsports
 // facility from OpenStreetMap (free, structured, geocoded, legal) via the
@@ -174,4 +175,104 @@ export async function importOsmVenues(env: Env): Promise<{ fetched: number; impo
     imported++;
   }
   return { fetched: elements.length, imported };
+}
+
+// ── Enrichment ──────────────────────────────────────────────────────────────
+
+/**
+ * Enrich venues with Perplexity: a one-line summary, the disciplines they run,
+ * their season, and a website if missing. Processes the least-recently-enriched
+ * venues first, `limit` per call (cheap, incremental). No-op without a key.
+ */
+export async function enrichVenues(
+  env: Env,
+  limit = 12,
+): Promise<{ enriched: number; configured: boolean }> {
+  if (!env.PERPLEXITY_API_KEY) return { enriched: 0, configured: false };
+
+  const { results } = await env.DB.prepare(
+    `SELECT id, name, category, city, state FROM venues
+     WHERE status != 'closed'
+     ORDER BY enriched_at IS NOT NULL, enriched_at ASC
+     LIMIT ?`,
+  )
+    .bind(limit)
+    .all<{ id: string; name: string; category: string; city: string | null; state: string | null }>();
+
+  let enriched = 0;
+  for (const v of results) {
+    const loc = [v.city, v.state].filter(Boolean).join(", ");
+    const r = await sonar(
+      env,
+      "You are a motorsports venue researcher. Use only verifiable facts. Output STRICT JSON, no prose.",
+      `For the motorsports facility "${v.name}"${loc ? ` in ${loc}` : ""}, return JSON: ` +
+        `{"summary":"one factual sentence","disciplines":["..."],"season":"e.g. April–October","website":"https://..."}. ` +
+        `disciplines = the racing types it hosts (motocross, road racing, autocross, drag, karting, dirt oval, sprint car, etc). ` +
+        `Use null for anything you cannot verify. Do not guess a website.`,
+    );
+    const ts = now();
+    if (!r) {
+      // mark attempted so we don't loop on the same rows forever
+      await env.DB.prepare("UPDATE venues SET enriched_at = ? WHERE id = ?").bind(ts, v.id).run();
+      continue;
+    }
+    const p = firstJson<{ summary?: string; disciplines?: string[]; season?: string; website?: string }>(r.content, {});
+    await env.DB.prepare(
+      `UPDATE venues SET
+         ai_summary = COALESCE(?, ai_summary),
+         disciplines = COALESCE(?, disciplines),
+         season = COALESCE(?, season),
+         website = COALESCE(website, ?),
+         enriched_at = ?, updated_at = ?
+       WHERE id = ?`,
+    )
+      .bind(
+        p.summary ?? null,
+        Array.isArray(p.disciplines) && p.disciplines.length ? JSON.stringify(p.disciplines) : null,
+        p.season ?? null,
+        p.website && /^https?:\/\//.test(p.website) ? p.website : null,
+        ts,
+        ts,
+        v.id,
+      )
+      .run();
+    enriched++;
+  }
+  return { enriched, configured: true };
+}
+
+// ── Venue ↔ track linking ────────────────────────────────────────────────────
+
+/**
+ * Auto-link venues to curated tracks by geo-proximity (within ~2km), so a
+ * venue's detail can surface that track's upcoming events + live timing.
+ * Idempotent; only fills venues whose track_id is still null.
+ */
+export async function linkVenuesToTracks(env: Env): Promise<{ linked: number }> {
+  const { results: tracks } = await env.DB.prepare(
+    "SELECT id, lat, lng FROM tracks WHERE lat IS NOT NULL AND lng IS NOT NULL",
+  ).all<{ id: string; lat: number; lng: number }>();
+  if (tracks.length === 0) return { linked: 0 };
+
+  const { results: venues } = await env.DB.prepare(
+    "SELECT id, lat, lng FROM venues WHERE track_id IS NULL",
+  ).all<{ id: string; lat: number; lng: number }>();
+
+  // ~0.02 degrees ≈ 2km; compare squared distance to avoid sqrt.
+  const THRESH = 0.02 * 0.02;
+  let linked = 0;
+  for (const v of venues) {
+    let best: { id: string; d: number } | null = null;
+    for (const t of tracks) {
+      const dLat = v.lat - t.lat;
+      const dLng = v.lng - t.lng;
+      const d = dLat * dLat + dLng * dLng;
+      if (d <= THRESH && (!best || d < best.d)) best = { id: t.id, d };
+    }
+    if (best) {
+      await env.DB.prepare("UPDATE venues SET track_id = ? WHERE id = ?").bind(best.id, v.id).run();
+      linked++;
+    }
+  }
+  return { linked };
 }

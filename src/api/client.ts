@@ -117,7 +117,10 @@ export const api = {
     req<{ total: number; states: number; byCategory: { category: string; n: number }[] }>(
       "/venues/stats",
     ),
-  venue: (id: string) => req<{ venue: any }>(`/venues/${id}`),
+  venue: (id: string) =>
+    req<{ venue: any; events: { slug: string; title: string; discipline?: string; starts_at: number; live: number }[] }>(
+      `/venues/${id}`,
+    ),
 
   // riders / pit board
   riders: () => req<{ riders: Rider[] }>("/riders"),

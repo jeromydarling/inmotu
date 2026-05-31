@@ -4,7 +4,7 @@ import { ingestEvents, ingestFromFeeds, type FeedEvent } from "../ingest";
 import { requireRole } from "../auth/middleware";
 import { refreshLegislation, refreshDiscoveredEvents } from "../lib/perplexity";
 import { crawlSources, type CrawlSource } from "../lib/crawl";
-import { importOsmVenues } from "../lib/venues";
+import { importOsmVenues, enrichVenues, linkVenuesToTracks } from "../lib/venues";
 
 // Admin tools — manual event ingestion (same engine the Cron Trigger runs).
 const admin = new Hono<{ Bindings: Env; Variables: Vars }>();
@@ -61,6 +61,20 @@ admin.post("/crawl", async (c) => {
 admin.post("/import-venues", async (c) => {
   const r = await importOsmVenues(c.env);
   return c.json({ ok: !r.error, ...r });
+});
+
+// Enrich venues via Perplexity (summary/disciplines/season/website). Optional
+// { limit } controls how many per call.
+admin.post("/enrich-venues", async (c) => {
+  const b = await c.req.json().catch(() => ({}));
+  const r = await enrichVenues(c.env, typeof b.limit === "number" ? b.limit : undefined);
+  return c.json({ ok: true, ...r });
+});
+
+// Auto-link venues to curated tracks by geo-proximity (surfaces events).
+admin.post("/link-venues", async (c) => {
+  const r = await linkVenuesToTracks(c.env);
+  return c.json({ ok: true, ...r });
 });
 
 // Approve / reject AI-discovered events.

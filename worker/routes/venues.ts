@@ -56,18 +56,35 @@ venues.get("/stats", async (c) => {
   });
 });
 
-// GET /api/venues/:id — a single venue with full detail (raw tags parsed).
+// GET /api/venues/:id — a single venue with full detail + (via its linked
+// track) any upcoming events, so the canvas drawer can show "racing here next".
 venues.get("/:id", async (c) => {
   const v = await c.env.DB.prepare("SELECT * FROM venues WHERE id = ?")
     .bind(c.req.param("id"))
     .first<Record<string, any>>();
   if (!v) return c.json({ error: "Venue not found" }, 404);
+
+  let events: unknown[] = [];
+  if (v.track_id) {
+    const r = await c.env.DB.prepare(
+      `SELECT slug, title, discipline, starts_at,
+              EXISTS(SELECT 1 FROM race_sessions rs WHERE rs.event_id = events.id AND rs.status='running') AS live
+       FROM events
+       WHERE track_id = ? AND needs_review = 0 AND starts_at >= ?
+       ORDER BY starts_at ASC LIMIT 8`,
+    )
+      .bind(v.track_id, Math.floor(Date.now() / 1000) - 86400)
+      .all();
+    events = r.results;
+  }
+
   return c.json({
     venue: {
       ...v,
       disciplines: v.disciplines ? JSON.parse(v.disciplines) : [],
       tags: v.tags ? JSON.parse(v.tags) : {},
     },
+    events,
   });
 });
 

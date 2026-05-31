@@ -13,7 +13,7 @@ interface SonarResult {
 }
 
 /** Low-level Perplexity chat call returning content + citations. */
-async function sonar(env: Env, system: string, user: string): Promise<SonarResult | null> {
+export async function sonar(env: Env, system: string, user: string): Promise<SonarResult | null> {
   if (!env.PERPLEXITY_API_KEY) return null;
   try {
     const res = await fetch("https://api.perplexity.ai/chat/completions", {
@@ -50,7 +50,7 @@ async function sonar(env: Env, system: string, user: string): Promise<SonarResul
 }
 
 /** Pull the first JSON value out of a possibly-fenced model response. */
-function firstJson<T>(s: string, fallback: T): T {
+export function firstJson<T>(s: string, fallback: T): T {
   const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/);
   const body = fence ? fence[1] : s;
   const start = body.search(/[[{]/);

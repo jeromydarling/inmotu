@@ -45,7 +45,7 @@ export default function CompetitionMap() {
     setSelected({ loading: true });
     try {
       const r = await api.venue(id);
-      setSelected(r.venue);
+      setSelected({ ...r.venue, events: r.events });
     } catch {
       setSelected(null);
     }
@@ -154,16 +154,67 @@ export default function CompetitionMap() {
                   <p className="text-sm text-white/50">
                     {[selected.city, selected.state].filter(Boolean).join(", ")}
                   </p>
-                  {selected.surface && (
-                    <span className="mt-2 inline-block rounded-full bg-white/[0.06] px-2 py-0.5 text-xs text-white/55">
-                      {titleCase(selected.surface)}
-                    </span>
+
+                  {selected.ai_summary && (
+                    <p className="mt-3 text-sm text-white/70">{selected.ai_summary}</p>
                   )}
+
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {selected.surface && (
+                      <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-xs text-white/55">
+                        {titleCase(selected.surface)}
+                      </span>
+                    )}
+                    {selected.season && (
+                      <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-xs text-white/55">
+                        {selected.season}
+                      </span>
+                    )}
+                    {Array.isArray(selected.disciplines) &&
+                      selected.disciplines.slice(0, 4).map((d: string) => (
+                        <span key={d} className="rounded-full bg-white/[0.06] px-2 py-0.5 text-xs text-white/55">
+                          {titleCase(d)}
+                        </span>
+                      ))}
+                  </div>
+
                   {selected.status === "endangered" && (
-                    <div className="mt-3 rounded-lg border border-flag-red/30 bg-flag-red/10 px-3 py-2 text-xs font-semibold text-flag-red">
-                      ● This track is under threat — see The Frontline
+                    <Link
+                      to="/frontline"
+                      className="mt-3 block rounded-lg border border-flag-red/30 bg-flag-red/10 px-3 py-2 text-xs font-semibold text-flag-red"
+                    >
+                      ● This track is under threat — join the fight on The Frontline →
+                    </Link>
+                  )}
+
+                  {Array.isArray(selected.events) && selected.events.length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-white/40">
+                        Racing here next
+                      </p>
+                      <div className="mt-2 space-y-1.5">
+                        {selected.events.map((e: any) => (
+                          <Link
+                            key={e.slug}
+                            to={`/events/${e.slug}`}
+                            className="flex items-center justify-between gap-2 rounded-lg border border-white/[0.06] bg-carbon-850 px-3 py-2 text-xs hover:border-white/20"
+                          >
+                            <span className="truncate text-white/80">{e.title}</span>
+                            {e.live ? (
+                              <span className="flex shrink-0 items-center gap-1 font-bold text-flag-green">
+                                <span className="h-1.5 w-1.5 animate-pulse-live rounded-full bg-flag-green" /> LIVE
+                              </span>
+                            ) : (
+                              <span className="shrink-0 text-white/40">
+                                {new Date(e.starts_at * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                              </span>
+                            )}
+                          </Link>
+                        ))}
+                      </div>
                     </div>
                   )}
+
                   {selected.website && (
                     <a
                       href={selected.website}

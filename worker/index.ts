@@ -32,7 +32,7 @@ import { runDeadlineSweep } from "./lib/notify";
 import { refreshLegislation } from "./lib/perplexity";
 import { refreshLiveResults } from "./lib/speedhive";
 import { crawlSources } from "./lib/crawl";
-import { importOsmVenues } from "./lib/venues";
+import { importOsmVenues, enrichVenues, linkVenuesToTracks } from "./lib/venues";
 import { renderWithMeta } from "./lib/seo";
 
 const app = new Hono<{ Bindings: Env; Variables: Vars }>();
@@ -186,7 +186,10 @@ export default {
         let venuesImport: unknown = "skipped";
         if (new Date().getUTCDay() === 1) {
           venuesImport = await importOsmVenues(env);
+          await linkVenuesToTracks(env);
         }
+        // Incrementally enrich a batch of venues daily (no-op without a key).
+        const venuesEnriched = await enrichVenues(env);
         const cutoff = Math.floor(Date.now() / 1000) - 7 * 24 * 60 * 60;
         const reap = await env.DB.prepare(
           "DELETE FROM users WHERE is_demo = 1 AND created_at < ?",
