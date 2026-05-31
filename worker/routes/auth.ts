@@ -56,6 +56,7 @@ auth.post("/register", async (c) => {
     zip: zip ?? null,
     plan: "free",
     role: "member",
+    sectors: [],
   };
   return c.json({ user }, 201);
 });

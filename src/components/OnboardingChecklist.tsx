@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import { ImportModal } from "./ImportModal";
+import { SectorPicker } from "./SectorPicker";
+import { useAuth } from "../state/auth";
+import type { SectorId } from "@shared/types";
 
 const STEP_LABELS: Record<string, { label: string; hint: string }> = {
   addRider: { label: "Add a rider", hint: "Riders tab → + Add rider" },
@@ -14,8 +17,11 @@ const STEP_LABELS: Record<string, { label: string; hint: string }> = {
  * complete (or the user dismisses it for the session).
  */
 export function OnboardingChecklist({ firstName }: { firstName?: string }) {
+  const { user, refresh } = useAuth();
   const [status, setStatus] = useState<{ steps: Record<string, boolean>; done: number; total: number } | null>(null);
   const [showImport, setShowImport] = useState(false);
+  const [picking, setPicking] = useState<SectorId[]>([]);
+  const [savingSectors, setSavingSectors] = useState(false);
   const [dismissed, setDismissed] = useState(
     typeof sessionStorage !== "undefined" && sessionStorage.getItem("imt_onboard_dismissed") === "1",
   );
@@ -24,6 +30,42 @@ export function OnboardingChecklist({ firstName }: { firstName?: string }) {
     api.onboardingStatus().then(setStatus).catch(() => {});
   }
   useEffect(load, []);
+
+  // First gate: pick your sector(s) before anything else. Adapts the whole app.
+  const needsSector = !!user && (user.sectors?.length ?? 0) === 0;
+  if (needsSector && !dismissed) {
+    async function saveSectors() {
+      if (picking.length === 0) return;
+      setSavingSectors(true);
+      try {
+        await api.setSectors(picking);
+        await refresh();
+      } finally {
+        setSavingSectors(false);
+      }
+    }
+    return (
+      <div className="panel relative mb-8 overflow-hidden p-6">
+        <div className="pointer-events-none absolute -right-16 -top-16 h-44 w-44 rounded-full bg-ignition/10 blur-3xl" />
+        <div className="relative">
+          <p className="eyebrow">Welcome{firstName ? `, ${firstName}` : ""} 🏁</p>
+          <h2 className="mt-1 font-display text-2xl font-extrabold tracking-tightest">
+            What do you race?
+          </h2>
+          <p className="mt-1 text-sm text-white/55">
+            Pick your world (or worlds) — we'll tune inmotu to speak your language: your races, your
+            ladder, your tracks. You can change this anytime.
+          </p>
+          <div className="mt-5">
+            <SectorPicker value={picking} onChange={setPicking} />
+          </div>
+          <button className="btn-primary mt-5" disabled={picking.length === 0 || savingSectors} onClick={saveSectors}>
+            {savingSectors ? "Saving…" : "That's my paddock →"}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!status || dismissed) return null;
   if (status.done >= status.total) return null; // fully onboarded — hide

@@ -56,15 +56,17 @@ const tickers = [
   "Nobody races alone",
   "Motocross",
   "First race? You belong here",
-  "Autocross",
+  "BMX",
   "Pass it down",
-  "Road Racing",
+  "Drag Racing",
   "Hold the line together",
-  "Endurance",
+  "Sprint Karting",
   "Save your home track",
-  "Short Track",
+  "Dirt-Oval Karting",
   "From the PW50 to the pit chair",
-  "Karting",
+  "Road Racing",
+  "Cut a perfect light",
+  "Autocross",
 ];
 
 export default function Landing() {
@@ -219,6 +221,9 @@ export default function Landing() {
           </p>
         </Reveal>
       </section>
+
+      {/* ─── SECTORS / YOUR WORLD ─────────────────────────────── */}
+      <SectorBand />
 
       {/* ─── MODULES ──────────────────────────────────────────── */}
       <section className="container-page py-16">
@@ -548,6 +553,57 @@ function HeroCanvas() {
         <Link to="/map" className="btn-primary px-6 py-3">
           Explore the full canvas →
         </Link>
+      </div>
+    </section>
+  );
+}
+
+// "Built for your world" — speaks to every community we serve. Each sector
+// gets its own language, ladder, and tracks once you pick it at sign-up.
+function SectorBand() {
+  const sectors: { label: string; line: string; accent: string }[] = [
+    { label: "Motocross", line: "From the gate drop to the Nationals ladder.", accent: "#22C55E" },
+    { label: "BMX Racing", line: "Motos, mains, and the road to your #1 plate.", accent: "#FF4D14" },
+    { label: "Drag Racing", line: "Cut a light, nail the dial — track points to Vegas.", accent: "#3B82F6" },
+    { label: "Sprint Karting", line: "LO206 to shifters. Where champions start.", accent: "#A855F7" },
+    { label: "Dirt-Oval Karting", line: "Hot laps, heats, and the feature on clay.", accent: "#F59E0B" },
+    { label: "Road Racing", line: "Track days, sessions, and wheel-to-wheel.", accent: "#FF4D14" },
+    { label: "Autocross", line: "Cones, classes, and your own best time.", accent: "#94A3B8" },
+  ];
+  return (
+    <section className="border-y border-white/[0.06] bg-carbon-900/40 py-20">
+      <div className="container-page">
+        <Reveal className="mb-10 text-center">
+          <p className="eyebrow">Built for your world</p>
+          <h2 className="mx-auto mt-2 max-w-2xl font-display text-3xl font-extrabold tracking-tightest sm:text-4xl">
+            One platform. Every kind of racing family.
+          </h2>
+          <p className="mx-auto mt-3 max-w-xl text-white/55">
+            inmotu isn't a generic "motorsport app." Tell us what you race and it speaks your
+            language — your sessions, your ladder, your tracks. No translation required.
+          </p>
+        </Reveal>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {sectors.map((s, i) => (
+            <Reveal key={s.label} delay={(i % 3) * 70}>
+              <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-carbon-850 p-5">
+                <span className="absolute inset-y-0 left-0 w-1" style={{ background: s.accent }} />
+                <div className="pl-2">
+                  <div className="font-display text-lg font-bold text-white">{s.label}</div>
+                  <p className="mt-1 text-sm text-white/55">{s.line}</p>
+                </div>
+              </div>
+            </Reveal>
+          ))}
+          <Reveal delay={140}>
+            <Link
+              to="/register"
+              className="flex h-full items-center justify-center rounded-2xl border border-dashed border-white/15 bg-transparent p-5 text-center text-sm font-semibold text-ignition-300 hover:border-ignition/40"
+            >
+              Pick your world → Start free
+            </Link>
+          </Reveal>
+        </div>
       </div>
     </section>
   );

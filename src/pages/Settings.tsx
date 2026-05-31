@@ -4,6 +4,9 @@ import { Badge, Spinner } from "../components/ui";
 import { useToast } from "../state/toast";
 import { enablePush, disablePush, pushSupported } from "../lib/push";
 import { useInstallPrompt } from "../lib/useInstallPrompt";
+import { SectorPicker } from "../components/SectorPicker";
+import { useAuth } from "../state/auth";
+import type { SectorId } from "@shared/types";
 
 export default function Settings() {
   const toast = useToast();
@@ -60,8 +63,11 @@ export default function Settings() {
     <div className="container-page max-w-2xl py-12">
       <header className="mb-8">
         <p className="eyebrow">Settings</p>
-        <h1 className="mt-2 font-display text-4xl font-extrabold tracking-tightest">Notifications & app</h1>
+        <h1 className="mt-2 font-display text-4xl font-extrabold tracking-tightest">Your account</h1>
       </header>
+
+      {/* Sectors */}
+      <SectorSettings />
 
       {/* Install */}
       <div className="panel mb-6 p-6">
@@ -145,5 +151,50 @@ function Row({
         <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition ${checked ? "left-[22px]" : "left-0.5"}`} />
       </button>
     </label>
+  );
+}
+
+// Edit which racing communities you follow — re-tunes the app's vocabulary,
+// progression model, and which venue categories surface on the map.
+function SectorSettings() {
+  const { user, refresh } = useAuth();
+  const toast = useToast();
+  const [sel, setSel] = useState<SectorId[]>(user?.sectors ?? []);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setSel(user?.sectors ?? []);
+  }, [user?.sectors]);
+
+  const dirty = JSON.stringify([...sel].sort()) !== JSON.stringify([...(user?.sectors ?? [])].sort());
+
+  async function save() {
+    setSaving(true);
+    try {
+      await api.setSectors(sel);
+      await refresh();
+      toast.success("Updated your sectors.");
+    } catch {
+      toast.error("Couldn't save. Try again.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="panel mb-6 p-6">
+      <h2 className="font-display text-lg font-bold">What you race</h2>
+      <p className="mt-1 text-sm text-white/55">
+        Your sectors tune inmotu to your world — the right words, the right ladder, the right tracks.
+      </p>
+      <div className="mt-4">
+        <SectorPicker value={sel} onChange={setSel} />
+      </div>
+      {dirty && (
+        <button className="btn-primary mt-4" disabled={saving} onClick={save}>
+          {saving ? "Saving…" : "Save sectors"}
+        </button>
+      )}
+    </div>
   );
 }

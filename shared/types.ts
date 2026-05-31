@@ -11,7 +11,111 @@ export interface PublicUser {
   zip: string | null;
   plan: Plan;
   role: Role;
+  sectors: SectorId[]; // chosen at onboarding; adapts vocabulary + features
 }
+
+// ── Sectors ──────────────────────────────────────────────────────────────────
+// A "sector" is the racing community a family belongs to. It adapts the
+// product's vocabulary, progression model, and which venue categories surface.
+// Canonical, shared by Worker + SPA so copy never drifts between them.
+
+export type SectorId =
+  | "motocross"
+  | "roadrace"
+  | "autocross"
+  | "karting_sprint"
+  | "karting_dirt"
+  | "bmx"
+  | "drag";
+
+/** How a sector models a competitor's path — drives the "ladder" UX. */
+export type ProgressionModel = "ladder" | "track_points" | "open";
+
+export interface SectorDef {
+  id: SectorId;
+  label: string; // short pill label
+  tagline: string; // one line for the picker
+  /** venue categories (see venues.category) this sector cares about */
+  venueCategories: string[];
+  progression: ProgressionModel;
+  /** the words this community actually uses — never show generic terms instead */
+  vocab: {
+    event: string; // what a race weekend/meet is called
+    session: string; // a single run/heat
+    final: string; // the climactic race
+    standings: string; // the ranking metric
+    competitor: string; // a participant
+    ladderName?: string; // name of the road-to-the-top, if any
+  };
+  /** values/phrases that signal we genuinely understand them */
+  voice: string[];
+}
+
+export const SECTORS: Record<SectorId, SectorDef> = {
+  motocross: {
+    id: "motocross",
+    label: "Motocross",
+    tagline: "Gates drop, the whole family's at the track.",
+    venueCategories: ["motocross"],
+    progression: "ladder",
+    vocab: { event: "race", session: "moto", final: "main", standings: "points", competitor: "rider", ladderName: "Road to the Ranch" },
+    voice: ["the gate drops", "moto", "the main", "pass it down"],
+  },
+  roadrace: {
+    id: "roadrace",
+    label: "Road Racing",
+    tagline: "Apexes, track days, and wheel-to-wheel.",
+    venueCategories: ["road"],
+    progression: "track_points",
+    vocab: { event: "race weekend", session: "session", final: "feature", standings: "championship", competitor: "driver" },
+    voice: ["apex", "track day", "wheel-to-wheel", "the esses"],
+  },
+  autocross: {
+    id: "autocross",
+    label: "Autocross",
+    tagline: "Cones, classes, and your own best time.",
+    venueCategories: ["road"],
+    progression: "track_points",
+    vocab: { event: "event", session: "run", final: "final run", standings: "PAX/class", competitor: "driver" },
+    voice: ["clean run", "coned it", "PAX", "raw time"],
+  },
+  karting_sprint: {
+    id: "karting_sprint",
+    label: "Sprint Karting",
+    tagline: "LO206 to shifters — where champions start.",
+    venueCategories: ["karting", "road"],
+    progression: "open",
+    vocab: { event: "race", session: "heat", final: "final", standings: "points", competitor: "driver" },
+    voice: ["LO206", "sealed engine", "the grid", "prefinal", "where champions start"],
+  },
+  karting_dirt: {
+    id: "karting_dirt",
+    label: "Dirt-Oval Karting",
+    tagline: "Hot laps, heats, and the feature on clay.",
+    venueCategories: ["karting", "oval"],
+    progression: "track_points",
+    vocab: { event: "race", session: "heat", final: "feature", standings: "points", competitor: "driver" },
+    voice: ["hot laps", "the feature", "pill draw", "the cushion", "LO206"],
+  },
+  bmx: {
+    id: "bmx",
+    label: "BMX Racing",
+    tagline: "From the balance-bike moto to the Grands.",
+    venueCategories: ["bmx"],
+    progression: "ladder",
+    vocab: { event: "race", session: "moto", final: "main", standings: "NAG points", competitor: "rider", ladderName: "Road to the #1 Plate" },
+    voice: ["moto", "the main", "gate pick", "transfer", "NAG plate", "Gold Cup", "the Grands"],
+  },
+  drag: {
+    id: "drag",
+    label: "Drag Racing",
+    tagline: "Cut a light, nail the dial, win Saturday night.",
+    venueCategories: ["drag"],
+    progression: "track_points",
+    vocab: { event: "race", session: "time trial", final: "final round", standings: "track points", competitor: "racer", ladderName: "Track Points to Vegas" },
+    voice: ["the tree", "dial-in", "time slip", "the eighth-mile", "Jr. Dragster", "run what ya brung"],
+  },
+};
 
 export interface Track {
   id: string;

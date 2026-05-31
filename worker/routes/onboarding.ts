@@ -4,6 +4,7 @@ import { requireAuth } from "../auth/middleware";
 import { err } from "../lib/http";
 import { now, uid, slugify } from "../lib/util";
 import { extractImport } from "../lib/ai";
+import { SECTORS, type SectorId } from "../../shared/types";
 
 // Onboarding + AI-assisted import.
 const onboarding = new Hono<{ Bindings: Env; Variables: Vars }>();
@@ -27,6 +28,19 @@ onboarding.get("/status", async (c) => {
   };
   const done = Object.values(steps).filter(Boolean).length;
   return c.json({ steps, done, total: Object.keys(steps).length, role: c.var.user!.role, plan: c.var.user!.plan });
+});
+
+// Set the user's sectors (chosen at onboarding; editable later in settings).
+onboarding.post("/sectors", async (c) => {
+  const b = await c.req.json().catch(() => ({}));
+  const valid = new Set(Object.keys(SECTORS));
+  const sectors = (Array.isArray(b.sectors) ? b.sectors : [])
+    .filter((s: unknown): s is SectorId => typeof s === "string" && valid.has(s))
+    .slice(0, 7);
+  await c.env.DB.prepare("UPDATE users SET sectors = ?, updated_at = ? WHERE id = ?")
+    .bind(JSON.stringify(sectors), now(), c.var.user!.id)
+    .run();
+  return c.json({ ok: true, sectors });
 });
 
 // AI import — parse pasted text into structured riders + events (preview only).

@@ -290,6 +290,13 @@ export const api = {
   pushUnsubscribe: (endpoint: string) =>
     req<{ ok: true }>("/notifications/unsubscribe", { method: "POST", body: JSON.stringify({ endpoint }) }),
 
+  // sectors
+  setSectors: (sectors: string[]) =>
+    req<{ ok: true; sectors: string[] }>("/onboarding/sectors", {
+      method: "POST",
+      body: JSON.stringify({ sectors }),
+    }),
+
   // onboarding + AI import
   onboardingStatus: () =>
     req<{ steps: Record<string, boolean>; done: number; total: number; role: string; plan: string }>(
