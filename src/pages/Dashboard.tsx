@@ -7,6 +7,7 @@ import { useToast } from "../state/toast";
 import { EventCard } from "../components/EventCard";
 import { Badge, EmptyState, Spinner, UpgradePrompt } from "../components/ui";
 import { fmtMoney, titleCase } from "../lib/format";
+import { primarySector } from "../lib/sector";
 import GaragePanel from "./panels/GaragePanel";
 import TowerPanel from "./panels/TowerPanel";
 import LadderPanel from "./panels/LadderPanel";
@@ -58,6 +59,9 @@ export default function Dashboard() {
   const can = (cap: string | null) => cap === null || caps?.can?.[cap] !== false;
   const current = TABS.find((t) => t.id === tab)!;
   const allowed = can(current.cap);
+  // Adapt the ladder tab to the user's sector ("Road to the #1 Plate" for BMX,
+  // "Track Points to Vegas" for drag, etc.) — falls back to "Ladder".
+  const ladderLabel = primarySector(user?.sectors)?.vocab.ladderName ?? "Ladder";
 
   return (
     <div className="container-page py-12">
@@ -85,7 +89,7 @@ export default function Dashboard() {
                 tab === t.id ? "bg-ignition text-white shadow-glow" : "text-white/55 hover:text-white"
               }`}
             >
-              {t.label}
+              {t.id === "ladder" ? ladderLabel : t.label}
               {locked && <span className="ml-1 text-white/40">🔒</span>}
             </button>
           );

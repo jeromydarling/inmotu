@@ -37,6 +37,8 @@ export interface SectorDef {
   tagline: string; // one line for the picker
   /** venue categories (see venues.category) this sector cares about */
   venueCategories: string[];
+  /** event/track discipline slugs this sector maps to (for filtering The Grid) */
+  disciplines: string[];
   progression: ProgressionModel;
   /** the words this community actually uses — never show generic terms instead */
   vocab: {
@@ -57,6 +59,7 @@ export const SECTORS: Record<SectorId, SectorDef> = {
     label: "Motocross",
     tagline: "Gates drop, the whole family's at the track.",
     venueCategories: ["motocross"],
+    disciplines: ["motocross", "off-road"],
     progression: "ladder",
     vocab: { event: "race", session: "moto", final: "main", standings: "points", competitor: "rider", ladderName: "Road to the Ranch" },
     voice: ["the gate drops", "moto", "the main", "pass it down"],
@@ -66,6 +69,7 @@ export const SECTORS: Record<SectorId, SectorDef> = {
     label: "Road Racing",
     tagline: "Apexes, track days, and wheel-to-wheel.",
     venueCategories: ["road"],
+    disciplines: ["road-race", "endurance"],
     progression: "track_points",
     vocab: { event: "race weekend", session: "session", final: "feature", standings: "championship", competitor: "driver" },
     voice: ["apex", "track day", "wheel-to-wheel", "the esses"],
@@ -75,6 +79,7 @@ export const SECTORS: Record<SectorId, SectorDef> = {
     label: "Autocross",
     tagline: "Cones, classes, and your own best time.",
     venueCategories: ["road"],
+    disciplines: ["autocross"],
     progression: "track_points",
     vocab: { event: "event", session: "run", final: "final run", standings: "PAX/class", competitor: "driver" },
     voice: ["clean run", "coned it", "PAX", "raw time"],
@@ -84,6 +89,7 @@ export const SECTORS: Record<SectorId, SectorDef> = {
     label: "Sprint Karting",
     tagline: "LO206 to shifters — where champions start.",
     venueCategories: ["karting", "road"],
+    disciplines: ["karting"],
     progression: "open",
     vocab: { event: "race", session: "heat", final: "final", standings: "points", competitor: "driver" },
     voice: ["LO206", "sealed engine", "the grid", "prefinal", "where champions start"],
@@ -93,6 +99,7 @@ export const SECTORS: Record<SectorId, SectorDef> = {
     label: "Dirt-Oval Karting",
     tagline: "Hot laps, heats, and the feature on clay.",
     venueCategories: ["karting", "oval"],
+    disciplines: ["karting", "short-track"],
     progression: "track_points",
     vocab: { event: "race", session: "heat", final: "feature", standings: "points", competitor: "driver" },
     voice: ["hot laps", "the feature", "pill draw", "the cushion", "LO206"],
@@ -102,6 +109,7 @@ export const SECTORS: Record<SectorId, SectorDef> = {
     label: "BMX Racing",
     tagline: "From the balance-bike moto to the Grands.",
     venueCategories: ["bmx"],
+    disciplines: ["bmx"],
     progression: "ladder",
     vocab: { event: "race", session: "moto", final: "main", standings: "NAG points", competitor: "rider", ladderName: "Road to the #1 Plate" },
     voice: ["moto", "the main", "gate pick", "transfer", "NAG plate", "Gold Cup", "the Grands"],
@@ -111,6 +119,7 @@ export const SECTORS: Record<SectorId, SectorDef> = {
     label: "Drag Racing",
     tagline: "Cut a light, nail the dial, win Saturday night.",
     venueCategories: ["drag"],
+    disciplines: ["drag"],
     progression: "track_points",
     vocab: { event: "race", session: "time trial", final: "final round", standings: "track points", competitor: "racer", ladderName: "Track Points to Vegas" },
     voice: ["the tree", "dial-in", "time slip", "the eighth-mile", "Jr. Dragster", "run what ya brung"],

@@ -7,6 +7,7 @@ import { EmptyState, Spinner, Pill } from "../components/ui";
 import { useAuth } from "../state/auth";
 import { useToast } from "../state/toast";
 import { titleCase } from "../lib/format";
+import { sectorDisciplines } from "../lib/sector";
 
 export default function Grid() {
   const { user } = useAuth();
@@ -18,6 +19,9 @@ export default function Grid() {
   const [discipline, setDiscipline] = useState("");
   const [level, setLevel] = useState("");
   const [q, setQ] = useState("");
+  // Scope to the user's sectors by default when they have any.
+  const mySectorDisc = sectorDisciplines(user?.sectors);
+  const [mineOnly, setMineOnly] = useState(mySectorDisc.length > 0);
 
   useEffect(() => {
     api.reference().then((r) => setDisciplines(r.disciplines)).catch(() => {});
@@ -27,6 +31,7 @@ export default function Grid() {
     setLoading(true);
     const params: Record<string, string> = {};
     if (discipline) params.discipline = discipline;
+    else if (mineOnly && mySectorDisc.length) params.disciplines = mySectorDisc.join(",");
     if (level) params.level = level;
     if (q) params.q = q;
     const t = setTimeout(() => {
@@ -37,7 +42,7 @@ export default function Grid() {
         .finally(() => setLoading(false));
     }, q ? 250 : 0);
     return () => clearTimeout(t);
-  }, [discipline, level, q]);
+  }, [discipline, level, q, mineOnly]);
 
   async function toggleSave(e: EventItem) {
     if (!user) {
@@ -93,14 +98,28 @@ export default function Grid() {
           onChange={(e) => setQ(e.target.value)}
         />
         <div className="flex flex-wrap gap-2">
-          <Pill active={!discipline} onClick={() => setDiscipline("")}>
+          {mySectorDisc.length > 0 && (
+            <Pill
+              active={mineOnly && !discipline}
+              onClick={() => {
+                setMineOnly((v) => !v);
+                setDiscipline("");
+              }}
+            >
+              ★ My sectors
+            </Pill>
+          )}
+          <Pill active={!discipline && !mineOnly} onClick={() => { setDiscipline(""); setMineOnly(false); }}>
             All disciplines
           </Pill>
           {disciplines.slice(0, 6).map((d) => (
             <Pill
               key={d.slug}
               active={discipline === d.slug}
-              onClick={() => setDiscipline(discipline === d.slug ? "" : d.slug)}
+              onClick={() => {
+                setMineOnly(false);
+                setDiscipline(discipline === d.slug ? "" : d.slug);
+              }}
             >
               {d.label}
             </Pill>

@@ -3,15 +3,19 @@ import { Link } from "react-router-dom";
 import { api, type VenuePin } from "../api/client";
 import { VenueMap, CATEGORY_META } from "../components/VenueMap";
 import { titleCase } from "../lib/format";
+import { useAuth } from "../state/auth";
+import { sectorVenueCategories } from "../lib/sector";
 
-const CATEGORIES = ["road", "oval", "motocross", "drag", "karting"] as const;
+const CATEGORIES = ["road", "oval", "motocross", "drag", "karting", "bmx"] as const;
 
 // The National Canvas — every motorsports venue in America on one map, with the
 // live event + battle layers on top. The flagship public surface.
 export default function CompetitionMap() {
+  const { user } = useAuth();
   const [venues, setVenues] = useState<VenuePin[]>([]);
   const [stats, setStats] = useState<{ total: number; states: number; byCategory: { category: string; n: number }[] } | null>(null);
-  const [active, setActive] = useState<Set<string>>(new Set());
+  // Default the category filter to the user's sectors (empty = show everything).
+  const [active, setActive] = useState<Set<string>>(() => new Set(sectorVenueCategories(user?.sectors)));
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);

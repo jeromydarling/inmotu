@@ -18,6 +18,16 @@ events.get("/", async (c) => {
     where.push("e.discipline = ?");
     binds.push(discipline);
   }
+  // Sector scoping: ?disciplines=motocross,bmx narrows to a set (used by The
+  // Grid when a user filters to their sector).
+  const disciplines = c.req.query("disciplines");
+  if (disciplines) {
+    const list = disciplines.split(",").map((s) => s.trim()).filter(Boolean);
+    if (list.length) {
+      where.push(`e.discipline IN (${list.map(() => "?").join(",")})`);
+      binds.push(...list);
+    }
+  }
   if (region) {
     where.push("e.region = ?");
     binds.push(region);

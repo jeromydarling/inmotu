@@ -30,3 +30,11 @@ export function sectorVenueCategories(sectors: SectorId[] | undefined): string[]
   for (const id of sectors) SECTORS[id]?.venueCategories.forEach((c) => set.add(c));
   return [...set];
 }
+
+/** The event/track discipline slugs relevant to a user's sectors; empty = all. */
+export function sectorDisciplines(sectors: SectorId[] | undefined): string[] {
+  if (!sectors || sectors.length === 0) return [];
+  const set = new Set<string>();
+  for (const id of sectors) SECTORS[id]?.disciplines.forEach((d) => set.add(d));
+  return [...set];
+}

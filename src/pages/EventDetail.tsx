@@ -5,6 +5,7 @@ import { Badge, Spinner } from "../components/ui";
 import { ShareButton } from "../components/ShareButton";
 import { fmtDate, fmtMoney, daysUntil, titleCase } from "../lib/format";
 import { useAuth } from "../state/auth";
+import { vocab } from "../lib/sector";
 
 export default function EventDetail() {
   const { slug } = useParams();
@@ -229,6 +230,8 @@ function RegisterBox({ eventId, fee }: { eventId: string; fee: number | null }) 
 // Live timing & results, powered by MYLAPS/Speedhive (or operator entry).
 // Auto-refreshes while any session is still running; silent if there's nothing.
 function LiveResults({ slug }: { slug: string }) {
+  const { user } = useAuth();
+  const v = vocab(user?.sectors);
   const [data, setData] = useState<{ linked: boolean; sessions: any[] } | null>(null);
   const [active, setActive] = useState(0);
 
@@ -300,7 +303,7 @@ function LiveResults({ slug }: { slug: string }) {
                   <tr className="text-left text-[11px] uppercase tracking-wide text-white/35">
                     <th className="py-1.5 pr-2">Pos</th>
                     <th className="py-1.5 pr-2">#</th>
-                    <th className="py-1.5 pr-3">Competitor</th>
+                    <th className="py-1.5 pr-3">{titleCase(v.competitor)}</th>
                     <th className="py-1.5 pr-2 text-right">Laps</th>
                     <th className="py-1.5 pr-2 text-right">Best</th>
                     <th className="py-1.5 text-right">Gap</th>
