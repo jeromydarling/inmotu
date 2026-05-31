@@ -78,6 +78,11 @@ export const api = {
       `/admin/discover/${sector}/${state}`,
       { method: "POST" },
     ),
+  adminSmoke: () =>
+    req<{ results: { engine: string; status: "ok" | "fail" | "skipped"; detail: string; ms?: number }[] }>(
+      "/admin/smoke",
+      { method: "POST" },
+    ),
   adminCrews: (sector: string, state: string) =>
     req<{ crews: any[] }>(`/admin/crews/${sector}/${state}`),
   adminReviewCrew: (id: string, approve: boolean) =>

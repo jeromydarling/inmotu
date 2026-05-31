@@ -18,6 +18,20 @@ export default function Admin() {
   const [state, setState] = useState("GA");
   const [running, setRunning] = useState(false);
   const [crews, setCrews] = useState<any[]>([]);
+  const [smoke, setSmoke] = useState<Awaited<ReturnType<typeof api.adminSmoke>>["results"] | null>(null);
+  const [smoking, setSmoking] = useState(false);
+
+  async function runSmoke() {
+    setSmoking(true);
+    try {
+      const r = await api.adminSmoke();
+      setSmoke(r.results);
+    } catch {
+      toast.error("Smoke test failed to run.");
+    } finally {
+      setSmoking(false);
+    }
+  }
 
   function loadCost() {
     api.adminCost().then(setCost).catch(() => setCost(null));
@@ -116,6 +130,31 @@ export default function Admin() {
           </div>
         </section>
       )}
+
+      {/* Smoke test — confirm each live key actually works */}
+      <section className="panel mb-6 p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-display text-lg font-bold">Engine smoke test</h2>
+            <p className="mt-1 text-sm text-white/55">One live probe per engine — confirms each key actually works, not just that it's set.</p>
+          </div>
+          <button className="btn-primary" disabled={smoking} onClick={runSmoke}>{smoking ? "Probing…" : "Run smoke test"}</button>
+        </div>
+        {smoke && (
+          <div className="mt-4 space-y-2">
+            {smoke.map((r) => (
+              <div key={r.engine} className="flex items-center gap-3 rounded-lg border border-white/[0.06] bg-carbon-850 px-3 py-2 text-sm">
+                <span className={`shrink-0 text-xs font-bold uppercase ${r.status === "ok" ? "text-flag-green" : r.status === "fail" ? "text-flag-red" : "text-white/35"}`}>
+                  {r.status === "ok" ? "● ok" : r.status === "fail" ? "✕ fail" : "○ skip"}
+                </span>
+                <span className="w-28 shrink-0 font-semibold capitalize text-white">{r.engine.replace("_", " ")}</span>
+                <span className="min-w-0 flex-1 truncate text-white/55">{r.detail}</span>
+                {r.ms != null && <span className="shrink-0 text-xs text-white/35">{r.ms}ms</span>}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       {/* On-demand discovery + crew review */}
       <section className="panel p-6">

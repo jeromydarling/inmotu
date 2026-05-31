@@ -7,6 +7,7 @@ import { refreshLegislation, refreshDiscoveredEvents } from "../lib/perplexity";
 import { crawlSources, type CrawlSource } from "../lib/crawl";
 import { importOsmVenues, enrichVenues, linkVenuesToTracks } from "../lib/venues";
 import { budgetStatus } from "../lib/budget";
+import { runSmoke } from "../lib/smoke";
 
 // Admin tools — manual event ingestion (same engine the Cron Trigger runs).
 const admin = new Hono<{ Bindings: Env; Variables: Vars }>();
@@ -113,6 +114,13 @@ admin.post("/crews/:id/review", async (c) => {
     await c.env.DB.prepare("DELETE FROM crews WHERE id = ?").bind(c.req.param("id")).run();
   }
   return c.json({ ok: true });
+});
+
+// Smoke test: one live probe per paid engine to confirm each key actually
+// works in production (not just "configured"). Admin-only; rare by design.
+admin.post("/smoke", async (c) => {
+  const results = await runSmoke(c.env);
+  return c.json({ results });
 });
 
 // Cost dashboard: today's spend vs cap per paid API, which engines are
