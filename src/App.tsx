@@ -18,6 +18,7 @@ import Rules from "./pages/Rules";
 import Standings from "./pages/Standings";
 import Demo from "./pages/Demo";
 import TeamPage from "./pages/TeamPage";
+import Settings from "./pages/Settings";
 
 function Shell() {
   const { pathname } = useLocation();
@@ -67,6 +68,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route element={<Protected />}>
+          <Route path="/app/settings" element={<Settings />} />
           <Route path="/app" element={<Dashboard />} />
           <Route path="/app/*" element={<Dashboard />} />
         </Route>

@@ -231,6 +231,19 @@ export const api = {
   setPhotoPublic: (id: string, isPublic: boolean) =>
     req<{ ok: true }>(`/photos/${id}/public`, { method: "PATCH", body: JSON.stringify({ public: isPublic }) }),
 
+  // notifications
+  notifications: () => req<{ notifications: any[]; unread: number }>("/notifications"),
+  markRead: (id?: string) =>
+    req<{ ok: true }>("/notifications/read", { method: "POST", body: JSON.stringify(id ? { id } : {}) }),
+  notifyPrefs: () => req<{ prefs: any; vapidConfigured: boolean }>("/notifications/prefs"),
+  saveNotifyPrefs: (prefs: Record<string, boolean>) =>
+    req<{ ok: true }>("/notifications/prefs", { method: "POST", body: JSON.stringify(prefs) }),
+  vapidKey: () => req<{ key: string | null }>("/notifications/vapid"),
+  pushSubscribe: (subscription: unknown) =>
+    req<{ ok: true }>("/notifications/subscribe", { method: "POST", body: JSON.stringify({ subscription }) }),
+  pushUnsubscribe: (endpoint: string) =>
+    req<{ ok: true }>("/notifications/unsubscribe", { method: "POST", body: JSON.stringify({ endpoint }) }),
+
   // meta + billing
   capabilities: () =>
     req<{

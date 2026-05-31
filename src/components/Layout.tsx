@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { Logo, Mark } from "./Logo";
 import { useAuth } from "../state/auth";
+import { NotificationBell } from "./NotificationBell";
 
 const navItems = [
   { to: "/grid", label: "The Grid" },
@@ -42,6 +43,7 @@ export function Header() {
         <div className="hidden items-center gap-2 md:flex">
           {user ? (
             <>
+              <NotificationBell />
               <Link to="/app" className="btn-ghost btn-sm">
                 Dashboard
               </Link>

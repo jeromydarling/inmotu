@@ -23,7 +23,9 @@ import demo from "./routes/demo";
 import adminRoutes from "./routes/admin";
 import studio from "./routes/studio";
 import teampages from "./routes/teampages";
+import notifications from "./routes/notifications";
 import { ingestFromFeeds } from "./ingest";
+import { runDeadlineSweep } from "./lib/notify";
 import { renderWithMeta } from "./lib/seo";
 
 const app = new Hono<{ Bindings: Env; Variables: Vars }>();
@@ -55,6 +57,7 @@ api.route("/demo", demo);
 api.route("/admin", adminRoutes);
 api.route("/studio", studio);
 api.route("/teampages", teampages);
+api.route("/notifications", notifications);
 
 api.notFound((c) => c.json({ error: "Not found" }, 404));
 api.onError((err, c) => {
@@ -161,13 +164,17 @@ export default {
     ctx.waitUntil(
       (async () => {
         const ingest = await ingestFromFeeds(env);
+        const deadlines = await runDeadlineSweep(env);
         const cutoff = Math.floor(Date.now() / 1000) - 7 * 24 * 60 * 60;
         const reap = await env.DB.prepare(
           "DELETE FROM users WHERE is_demo = 1 AND created_at < ?",
         )
           .bind(cutoff)
           .run();
-        console.log("cron run", JSON.stringify({ ingest, demoReaped: reap.meta.changes }));
+        console.log(
+          "cron run",
+          JSON.stringify({ ingest, deadlines, demoReaped: reap.meta.changes }),
+        );
       })(),
     );
   },

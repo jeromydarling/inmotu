@@ -13,12 +13,16 @@ export interface Env {
   STRIPE_PRICE_YEARBOOK?: string;
   LULU_ENV?: string; // 'sandbox' | 'production'
   INGEST_FEEDS?: string; // comma-separated JSON feed URLs for event ingestion
+  VAPID_PUBLIC_KEY?: string; // web-push public key (safe to expose to client)
+  EMAIL_FROM?: string; // from address for email notifications
   // Secrets (set via `wrangler secret put`):
   SESSION_SECRET?: string;
   STRIPE_SECRET_KEY?: string;
   STRIPE_WEBHOOK_SECRET?: string;
   LULU_CLIENT_KEY?: string;
   LULU_CLIENT_SECRET?: string;
+  VAPID_PRIVATE_KEY?: string; // web-push private key
+  RESEND_API_KEY?: string; // email provider key (Resend)
 }
 
 // Hono context variables

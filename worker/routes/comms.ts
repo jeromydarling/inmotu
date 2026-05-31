@@ -4,6 +4,7 @@ import { requireAuth } from "../auth/middleware";
 import { now, uid } from "../lib/util";
 import { ownsEvent } from "../db";
 import { err } from "../lib/http";
+import { notify } from "../lib/notify";
 
 // Communication center — operators post updates to an event; families who are
 // registered for (or have saved) that event see them in their Updates feed.
@@ -25,14 +26,36 @@ comms.post("/events/:id/announce", async (c) => {
     .bind(id, eventId, c.var.user!.id, b.title, b.body, b.urgent ? 1 : 0, now())
     .run();
 
-  const recipients = await c.env.DB.prepare(
-    `SELECT COUNT(DISTINCT user_id) AS n FROM (
+  // Recipients = everyone registered for or following this event.
+  const recips = await c.env.DB.prepare(
+    `SELECT DISTINCT user_id FROM (
        SELECT user_id FROM registrations WHERE event_id = ?
        UNION SELECT user_id FROM saved_events WHERE event_id = ?)`,
   )
     .bind(eventId, eventId)
-    .first<{ n: number }>();
-  return c.json({ ok: true, id, recipients: recipients?.n ?? 0 }, 201);
+    .all<{ user_id: string }>();
+
+  const ev = await c.env.DB.prepare("SELECT slug FROM events WHERE id = ?")
+    .bind(eventId)
+    .first<{ slug: string }>();
+
+  // Notify each recipient (in-app + push/email) without blocking the response.
+  c.executionCtx.waitUntil(
+    (async () => {
+      for (const r of recips.results) {
+        await notify(c.env, {
+          userId: r.user_id,
+          kind: "announcement",
+          title: b.title,
+          body: b.body,
+          href: ev ? `/events/${ev.slug}` : "/app",
+          dedupeKey: `ann:${id}:${r.user_id}`,
+        });
+      }
+    })(),
+  );
+
+  return c.json({ ok: true, id, recipients: recips.results.length }, 201);
 });
 
 // Operator: announcements they've posted (optionally for one event).
