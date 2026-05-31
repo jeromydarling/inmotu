@@ -28,7 +28,9 @@ export async function ingestEvents(
   env: Env,
   items: FeedEvent[],
   source: string,
+  opts: { needsReview?: boolean } = {},
 ): Promise<{ upserted: number; skipped: number }> {
+  const needsReview = opts.needsReview ? 1 : 0;
   let upserted = 0;
   let skipped = 0;
   for (const it of items) {
@@ -40,8 +42,8 @@ export async function ingestEvents(
     const id = it.id || uid("evt_");
     await env.DB.prepare(
       `INSERT INTO events (id, slug, title, discipline, body_slug, region, level, age_group,
-         starts_at, ends_at, reg_closes_at, entry_fee_cents, external_url, source, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         starts_at, ends_at, reg_closes_at, entry_fee_cents, external_url, source, needs_review, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(slug) DO UPDATE SET
          title = excluded.title, starts_at = excluded.starts_at, ends_at = excluded.ends_at,
          reg_closes_at = excluded.reg_closes_at, entry_fee_cents = excluded.entry_fee_cents,
@@ -62,6 +64,7 @@ export async function ingestEvents(
         it.entry_fee_cents ?? null,
         it.external_url ?? null,
         source,
+        needsReview,
         now(),
       )
       .run();

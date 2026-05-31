@@ -1,6 +1,8 @@
 import { Hono } from "hono";
 import type { Env, Vars } from "../types";
-import { now, uid } from "../lib/util";
+import { now, uid, parseJson } from "../lib/util";
+import { requireAuth } from "../auth/middleware";
+import { lookupLegislators } from "../lib/perplexity";
 
 // The Frontline — Right to Race advocacy. Read is public; actions need auth.
 const advocacy = new Hono<{ Bindings: Env; Variables: Vars }>();
@@ -11,6 +13,10 @@ advocacy.get("/legislation", async (c) => {
   const binds: unknown[] = [];
   if (status) (where.push("l.status = ?"), binds.push(status));
   if (state) (where.push("l.state = ?"), binds.push(state));
+  // Hide seeded rows for any state that now has live (perplexity) data.
+  where.push(
+    "(l.source = 'perplexity' OR l.state NOT IN (SELECT DISTINCT state FROM legislation WHERE source = 'perplexity'))",
+  );
 
   const sql = `
     SELECT l.*,
@@ -24,7 +30,7 @@ advocacy.get("/legislation", async (c) => {
       l.state_name ASC`;
   const { results } = await c.env.DB.prepare(sql)
     .bind(...binds)
-    .all();
+    .all<Record<string, any>>();
 
   let supported = new Set<string>();
   if (c.var.user) {
@@ -38,9 +44,21 @@ advocacy.get("/legislation", async (c) => {
   return c.json({
     legislation: results.map((l) => ({
       ...l,
+      citations: parseJson<{ title?: string; url: string }[]>(l.citations, []),
+      live: l.source === "perplexity",
       supported: supported.has(l.id as string),
     })),
   });
+});
+
+// Resolve a user's actual state legislators from a ZIP (Google Civic, cached).
+// Falls back to null officials when not configured — UI shows manual guidance.
+advocacy.get("/legislators", async (c) => {
+  const zip = c.req.query("zip") ?? c.var.user?.zip ?? "";
+  if (!/^\d{5}$/.test(zip)) return c.json({ error: "validation", message: "A 5-digit ZIP is required" }, 400);
+  const result = await lookupLegislators(c.env, zip);
+  if (!result) return c.json({ configured: false, officials: [], state: null });
+  return c.json({ configured: true, ...result });
 });
 
 // Endangered tracks map data

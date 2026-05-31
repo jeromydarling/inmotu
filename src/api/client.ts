@@ -98,6 +98,10 @@ export const api = {
     req<{ tracks: (Track & { threat_type?: string; description?: string })[] }>(
       "/advocacy/endangered",
     ),
+  legislators: (zip: string) =>
+    req<{ configured: boolean; state: string | null; officials: { name: string; office: string; party?: string; emails?: string[]; phones?: string[]; url?: string }[] }>(
+      `/advocacy/legislators?zip=${encodeURIComponent(zip)}`,
+    ),
   support: (kind: string, target_type: string, target_id: string) =>
     req<{ ok: true; supporters: number }>("/advocacy/support", {
       method: "POST",

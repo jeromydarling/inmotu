@@ -23,6 +23,8 @@ export interface Env {
   LULU_CLIENT_SECRET?: string;
   VAPID_PRIVATE_KEY?: string; // web-push private key
   RESEND_API_KEY?: string; // email provider key (Resend)
+  PERPLEXITY_API_KEY?: string; // Perplexity Sonar — live legislation + event discovery
+  GOOGLE_CIVIC_API_KEY?: string; // legislator lookup by address/ZIP
 }
 
 // Hono context variables

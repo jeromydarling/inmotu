@@ -31,6 +31,8 @@ events.get("/", async (c) => {
   // default: upcoming events only
   where.push("e.starts_at >= ?");
   binds.push(from ? Number(from) : now() - 86400);
+  // Hide AI-discovered events pending review unless explicitly included.
+  if (c.req.query("include_unverified") !== "1") where.push("e.needs_review = 0");
 
   const sql = `
     SELECT e.*, t.name AS track_name, t.city AS track_city, t.state AS track_state
