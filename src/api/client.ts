@@ -118,12 +118,15 @@ export const api = {
       "/venues/stats",
     ),
   // newcomer on-ramp
-  startSector: (sector: string) =>
+  startSector: (sector: string, state?: string) =>
     req<{
       sector: string;
+      state: string | null;
       venues: { id: string; name: string; category: string; city: string | null; state: string | null; lat: number; lng: number; website: string | null; starter_note: string | null }[];
-      events: { slug: string; title: string; discipline: string | null; level: string | null; starts_at: number; track_name: string | null; track_city: string | null; track_state: string | null }[];
-    }>(`/start/${sector}`),
+      events: { slug: string; title: string; discipline: string | null; level: string | null; starts_at: number; needs_review?: number; source?: string; track_name: string | null; track_city: string | null; track_state: string | null }[];
+      crews: { id: string; name: string; kind: string; blurb: string | null; city: string | null; state: string | null; website: string | null; email: string | null; phone: string | null; facebook: string | null; meets: string | null; beginner_friendly: number; needs_review: number; verified: number; citations: { title?: string; url: string }[] }[];
+      discovery: { configured: boolean; ran: boolean; events: number; crews: number };
+    }>(`/start/${sector}${state ? `?state=${state}` : ""}`),
   venue: (id: string) =>
     req<{ venue: any; events: { slug: string; title: string; discipline?: string; starts_at: number; live: number }[] }>(
       `/venues/${id}`,

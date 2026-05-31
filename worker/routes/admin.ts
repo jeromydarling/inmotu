@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { Env, Vars } from "../types";
 import { ingestEvents, ingestFromFeeds, type FeedEvent } from "../ingest";
 import { requireRole } from "../auth/middleware";
+import { ensureDiscovered, getCrews } from "../lib/discovery";
 import { refreshLegislation, refreshDiscoveredEvents } from "../lib/perplexity";
 import { crawlSources, type CrawlSource } from "../lib/crawl";
 import { importOsmVenues, enrichVenues, linkVenuesToTracks } from "../lib/venues";
@@ -84,6 +85,31 @@ admin.post("/events/:id/review", async (c) => {
     await c.env.DB.prepare("UPDATE events SET needs_review = 0 WHERE id = ?").bind(c.req.param("id")).run();
   } else {
     await c.env.DB.prepare("DELETE FROM events WHERE id = ? AND needs_review = 1").bind(c.req.param("id")).run();
+  }
+  return c.json({ ok: true });
+});
+
+
+// On-demand discovery for a sector+state (beginner events + local crews via
+// Perplexity, cached). Admin trigger; the public Start page also warms this.
+admin.post("/discover/:sector/:state", async (c) => {
+  const r = await ensureDiscovered(c.env, c.req.param("sector"), c.req.param("state").toUpperCase());
+  return c.json({ ok: true, ...r, configured: !!c.env.PERPLEXITY_API_KEY });
+});
+
+// List crews for review (sector+state), including unverified.
+admin.get("/crews/:sector/:state", async (c) => {
+  const crews = await getCrews(c.env, c.req.param("sector"), c.req.param("state").toUpperCase(), true);
+  return c.json({ crews });
+});
+
+// Verify (approve) or reject an AI-found crew. Verifying clears the review gate.
+admin.post("/crews/:id/review", async (c) => {
+  const b = await c.req.json().catch(() => ({}));
+  if (b.approve) {
+    await c.env.DB.prepare("UPDATE crews SET needs_review = 0, verified = 1 WHERE id = ?").bind(c.req.param("id")).run();
+  } else {
+    await c.env.DB.prepare("DELETE FROM crews WHERE id = ?").bind(c.req.param("id")).run();
   }
   return c.json({ ok: true });
 });
