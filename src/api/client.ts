@@ -219,7 +219,17 @@ export const api = {
       body: JSON.stringify({ name, facts }),
     }),
   publicTeamPage: (slug: string) =>
-    req<{ page: any; riders: any[] }>(`/teampages/public/${slug}`),
+    req<{
+      page: any;
+      riders?: any[];
+      events?: any[];
+      photos?: { id: string; caption: string | null }[];
+      sponsors?: { name: string; tier: string | null }[];
+      ladder?: { rider: string; stage: string; result_pos: number | null; advanced: number }[];
+      stats?: { riders: number; races: number; advancements: number };
+    }>(`/teampages/public/${slug}`),
+  setPhotoPublic: (id: string, isPublic: boolean) =>
+    req<{ ok: true }>(`/photos/${id}/public`, { method: "PATCH", body: JSON.stringify({ public: isPublic }) }),
 
   // meta + billing
   capabilities: () =>

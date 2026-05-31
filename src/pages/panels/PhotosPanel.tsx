@@ -48,6 +48,12 @@ export default function PhotosPanel() {
     await api.deletePhoto(id).catch(load);
   }
 
+  async function togglePublic(p: any) {
+    const next = p.public ? 0 : 1;
+    setPhotos((arr) => arr.map((x) => (x.id === p.id ? { ...x, public: next } : x)));
+    await api.setPhotoPublic(p.id, !!next).catch(load);
+  }
+
   return (
     <div className="space-y-8">
       <YearbookBlock riders={riders} photoCount={photos.length} />
@@ -94,6 +100,17 @@ export default function PhotosPanel() {
                   aria-label="Delete photo"
                 >
                   ✕
+                </button>
+                <button
+                  onClick={() => togglePublic(p)}
+                  className={`absolute left-2 top-2 rounded-lg px-2 py-1 text-xs font-semibold backdrop-blur transition ${
+                    p.public
+                      ? "bg-flag-green/25 text-flag-green"
+                      : "bg-carbon-950/70 text-white/60 opacity-0 group-hover:opacity-100"
+                  }`}
+                  title={p.public ? "Showing on your microsite" : "Show on microsite"}
+                >
+                  {p.public ? "🌐 Public" : "🌐 Feature"}
                 </button>
                 {p.caption && (
                   <figcaption className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-carbon-950 to-transparent px-2 py-1.5 text-xs text-white/80">

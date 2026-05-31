@@ -7,6 +7,25 @@ import { now, uid } from "../lib/util";
 // Family photo timeline — stored in R2, metadata in D1.
 const photos = new Hono<{ Bindings: Env; Variables: Vars }>();
 
+// Public image streaming — only photos the owner flagged public. Used by the
+// microsite gallery (no auth). Defined before the auth middleware below.
+photos.get("/:id/public-raw", async (c) => {
+  const row = await c.env.DB.prepare(
+    "SELECT r2_key, content_type FROM photos WHERE id = ? AND public = 1",
+  )
+    .bind(c.req.param("id"))
+    .first<{ r2_key: string; content_type: string | null }>();
+  if (!row) return c.json({ error: "Not found" }, 404);
+  const obj = await c.env.MEDIA.get(row.r2_key);
+  if (!obj) return c.json({ error: "Missing" }, 404);
+  return new Response(obj.body, {
+    headers: {
+      "Content-Type": row.content_type || "image/jpeg",
+      "Cache-Control": "public, max-age=86400",
+    },
+  });
+});
+
 // Raw image streaming (auth: must own the photo). Used as <img src>.
 photos.get("/:id/raw", requireAuth, async (c) => {
   const row = await c.env.DB.prepare(
@@ -37,7 +56,7 @@ photos.get("/", async (c) => {
   if (rider_id) (where.push("rider_id = ?"), binds.push(rider_id));
   if (event_id) (where.push("event_id = ?"), binds.push(event_id));
   const { results } = await c.env.DB.prepare(
-    `SELECT id, rider_id, event_id, caption, taken_at, created_at
+    `SELECT id, rider_id, event_id, caption, taken_at, created_at, public
      FROM photos WHERE ${where.join(" AND ")} ORDER BY created_at DESC LIMIT 500`,
   )
     .bind(...binds)
@@ -75,6 +94,15 @@ photos.post("/", async (c) => {
     .run();
 
   return c.json({ photo: { id, rider_id: riderId, event_id: eventId, caption } }, 201);
+});
+
+// Toggle a photo's public flag (controls microsite gallery visibility).
+photos.patch("/:id/public", async (c) => {
+  const b = await c.req.json().catch(() => ({}));
+  await c.env.DB.prepare("UPDATE photos SET public = ? WHERE id = ? AND user_id = ?")
+    .bind(b.public ? 1 : 0, c.req.param("id"), c.var.user!.id)
+    .run();
+  return c.json({ ok: true });
 });
 
 photos.delete("/:id", async (c) => {
