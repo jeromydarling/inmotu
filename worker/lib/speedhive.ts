@@ -1,5 +1,6 @@
 import type { Env } from "../types";
 import { now, uid, parseJson } from "./util";
+import { tryConsume } from "./budget";
 
 // MYLAPS / Speedhive live results. Like the Perplexity/Civic clients, this
 // degrades gracefully: an event with no Speedhive id (or a missing/unreachable
@@ -38,6 +39,11 @@ export interface ResultSession {
 }
 
 async function shFetch(env: Env, path: string): Promise<any | null> {
+  // Cost guard: cap daily Speedhive calls (cheap, but bound it anyway).
+  if (!(await tryConsume(env, "speedhive"))) {
+    console.warn("speedhive daily budget reached — skipping call");
+    return null;
+  }
   try {
     const headers: Record<string, string> = { Accept: "application/json" };
     if (env.SPEEDHIVE_API_KEY) headers.Authorization = `Bearer ${env.SPEEDHIVE_API_KEY}`;

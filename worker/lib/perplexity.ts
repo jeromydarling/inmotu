@@ -1,5 +1,6 @@
 import type { Env } from "../types";
 import { now, uid } from "./util";
+import { tryConsume } from "./budget";
 
 // Perplexity Sonar (web-grounded, cited) + Google Civic (deterministic rep
 // lookup). All functions degrade gracefully: if a key is absent they return
@@ -15,6 +16,11 @@ interface SonarResult {
 /** Low-level Perplexity chat call returning content + citations. */
 export async function sonar(env: Env, system: string, user: string): Promise<SonarResult | null> {
   if (!env.PERPLEXITY_API_KEY) return null;
+  // Cost guard: stop at the daily Perplexity cap before spending.
+  if (!(await tryConsume(env, "perplexity"))) {
+    console.warn("perplexity daily budget reached — skipping call");
+    return null;
+  }
   try {
     const res = await fetch("https://api.perplexity.ai/chat/completions", {
       method: "POST",
@@ -151,6 +157,11 @@ export async function lookupLegislators(
   }
 
   if (!env.GOOGLE_CIVIC_API_KEY) return null;
+  // Cost guard: public ZIP endpoint — cap daily Civic lookups.
+  if (!(await tryConsume(env, "civic"))) {
+    console.warn("civic daily budget reached — skipping lookup");
+    return null;
+  }
   try {
     const url =
       `https://www.googleapis.com/civicinfo/v2/representatives?key=${env.GOOGLE_CIVIC_API_KEY}` +

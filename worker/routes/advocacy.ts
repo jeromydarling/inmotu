@@ -3,6 +3,7 @@ import type { Env, Vars } from "../types";
 import { now, uid, parseJson } from "../lib/util";
 import { requireAuth } from "../auth/middleware";
 import { lookupLegislators } from "../lib/perplexity";
+import { rateLimit } from "../lib/budget";
 
 // The Frontline — Right to Race advocacy. Read is public; actions need auth.
 const advocacy = new Hono<{ Bindings: Env; Variables: Vars }>();
@@ -56,6 +57,11 @@ advocacy.get("/legislation", async (c) => {
 advocacy.get("/legislators", async (c) => {
   const zip = c.req.query("zip") ?? c.var.user?.zip ?? "";
   if (!/^\d{5}$/.test(zip)) return c.json({ error: "validation", message: "A 5-digit ZIP is required" }, 400);
+  // Public, paid (Civic) endpoint — per-IP rate limit so it can't be walked.
+  const ip = c.req.header("cf-connecting-ip") ?? "anon";
+  if (!(await rateLimit(c.env, `civic:${ip}`, 15, 60))) {
+    return c.json({ error: "rate_limited", message: "Too many lookups — try again in a minute." }, 429);
+  }
   const result = await lookupLegislators(c.env, zip);
   if (!result) return c.json({ configured: false, officials: [], state: null });
   return c.json({ configured: true, ...result });

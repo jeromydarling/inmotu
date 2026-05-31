@@ -6,6 +6,7 @@ import { ensureDiscovered, getCrews } from "../lib/discovery";
 import { refreshLegislation, refreshDiscoveredEvents } from "../lib/perplexity";
 import { crawlSources, type CrawlSource } from "../lib/crawl";
 import { importOsmVenues, enrichVenues, linkVenuesToTracks } from "../lib/venues";
+import { budgetStatus } from "../lib/budget";
 
 // Admin tools — manual event ingestion (same engine the Cron Trigger runs).
 const admin = new Hono<{ Bindings: Env; Variables: Vars }>();
@@ -112,6 +113,28 @@ admin.post("/crews/:id/review", async (c) => {
     await c.env.DB.prepare("DELETE FROM crews WHERE id = ?").bind(c.req.param("id")).run();
   }
   return c.json({ ok: true });
+});
+
+// Cost dashboard: today's spend vs cap per paid API, which engines are
+// configured, and pending review queues. Powers the admin Control panel.
+admin.get("/cost", async (c) => {
+  const budgets = await budgetStatus(c.env);
+  const pendingEvents = await c.env.DB.prepare("SELECT COUNT(*) AS n FROM events WHERE needs_review = 1")
+    .first<{ n: number }>();
+  const pendingCrews = await c.env.DB.prepare("SELECT COUNT(*) AS n FROM crews WHERE needs_review = 1")
+    .first<{ n: number }>();
+  return c.json({
+    budgets,
+    pending: { events: pendingEvents?.n ?? 0, crews: pendingCrews?.n ?? 0 },
+    engines: {
+      perplexity: !!c.env.PERPLEXITY_API_KEY,
+      civic: !!c.env.GOOGLE_CIVIC_API_KEY,
+      speedhive: !!c.env.SPEEDHIVE_API_KEY,
+      firecrawl: !!c.env.FIRECRAWL_API_KEY,
+      browser: !!(c.env.CLOUDFLARE_ACCOUNT_ID && c.env.CLOUDFLARE_API_TOKEN),
+      mapbox: !!c.env.MAPBOX_TOKEN,
+    },
+  });
 });
 
 export default admin;

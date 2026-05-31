@@ -21,6 +21,7 @@ import Standings from "./pages/Standings";
 import Demo from "./pages/Demo";
 import TeamPage from "./pages/TeamPage";
 import Settings from "./pages/Settings";
+import Admin from "./pages/Admin";
 
 function Shell() {
   const { pathname } = useLocation();
@@ -73,6 +74,7 @@ export default function App() {
         <Route path="/register" element={<Register />} />
         <Route element={<Protected />}>
           <Route path="/app/settings" element={<Settings />} />
+          <Route path="/app/admin" element={<Admin />} />
           <Route path="/app" element={<Dashboard />} />
           <Route path="/app/*" element={<Dashboard />} />
         </Route>

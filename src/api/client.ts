@@ -66,6 +66,23 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  // admin — cost dashboard + discovery/crew controls
+  adminCost: () =>
+    req<{
+      budgets: { api: string; used: number; limit: number; configured: boolean }[];
+      pending: { events: number; crews: number };
+      engines: Record<string, boolean>;
+    }>("/admin/cost"),
+  adminDiscover: (sector: string, state: string) =>
+    req<{ ok: boolean; ran: boolean; events: number; crews: number; configured: boolean }>(
+      `/admin/discover/${sector}/${state}`,
+      { method: "POST" },
+    ),
+  adminCrews: (sector: string, state: string) =>
+    req<{ crews: any[] }>(`/admin/crews/${sector}/${state}`),
+  adminReviewCrew: (id: string, approve: boolean) =>
+    req<{ ok: true }>(`/admin/crews/${id}/review`, { method: "POST", body: JSON.stringify({ approve }) }),
+
   // auth
   me: () => req<{ user: PublicUser | null }>("/auth/me"),
   login: (email: string, password: string) =>

@@ -46,6 +46,11 @@ export function Header() {
           {user ? (
             <>
               <NotificationBell />
+              {user.role === "admin" && (
+                <Link to="/app/admin" className="btn-ghost btn-sm">
+                  Control
+                </Link>
+              )}
               <Link to="/app" className="btn-ghost btn-sm">
                 Dashboard
               </Link>

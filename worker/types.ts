@@ -34,6 +34,10 @@ export interface Env {
   CRAWL_SOURCES?: string; // json: [{url, region?, discipline?, provider?}]
   OVERPASS_URL?: string; // override/prefer a specific Overpass API mirror
   DISCOVERY_DAILY_BUDGET?: string; // max cold discovery runs/day (cost cap; default 60)
+  // Per-API daily spend caps (cost guards; sensible defaults in lib/budget.ts):
+  BUDGET_PERPLEXITY?: string;
+  BUDGET_CIVIC?: string;
+  BUDGET_SPEEDHIVE?: string;
 }
 
 // Hono context variables

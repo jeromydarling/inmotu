@@ -1,6 +1,7 @@
 import type { Env } from "../types";
 import { now, uid, parseJson } from "./util";
 import { ingestEvents, type FeedEvent } from "../ingest";
+import { tryConsume } from "./budget";
 
 // inmotu local-discovery engine — stretch Perplexity into the data nobody's
 // captured: the beginner-friendly events AND the local clubs/crews for every
@@ -25,6 +26,11 @@ interface AskResult {
 
 async function ask(env: Env, model: string, system: string, user: string): Promise<AskResult | null> {
   if (!env.PERPLEXITY_API_KEY) return null;
+  // Shares the Perplexity daily budget with legislation/events/enrich.
+  if (!(await tryConsume(env, "perplexity"))) {
+    console.warn("perplexity daily budget reached — skipping discovery call");
+    return null;
+  }
   try {
     const res = await fetch("https://api.perplexity.ai/chat/completions", {
       method: "POST",
