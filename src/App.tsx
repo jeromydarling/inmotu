@@ -6,6 +6,7 @@ import { useEffect } from "react";
 
 import Landing from "./pages/Landing";
 import Grid from "./pages/Grid";
+import CompetitionMap from "./pages/CompetitionMap";
 import EventDetail from "./pages/EventDetail";
 import Tracks from "./pages/Tracks";
 import TrackDetail from "./pages/TrackDetail";
@@ -56,6 +57,7 @@ export default function App() {
       <Route element={<Shell />}>
         <Route path="/" element={<Landing />} />
         <Route path="/grid" element={<Grid />} />
+        <Route path="/map" element={<CompetitionMap />} />
         <Route path="/events/:slug" element={<EventDetail />} />
         <Route path="/tracks" element={<Tracks />} />
         <Route path="/tracks/:slug" element={<TrackDetail />} />

@@ -139,6 +139,11 @@ export default function Landing() {
             <StatBlock value={stats?.enacted_bills} label="Tracks already protected" />
           </div>
         </div>
+
+        {/* Live map — where the racing is, and where the battles are */}
+        <div className="container-page pb-12">
+          <HeroMap />
+        </div>
       </section>
 
       {/* ─── TICKER ───────────────────────────────────────────── */}

@@ -48,4 +48,64 @@ map.get("/pins", async (c) => {
   });
 });
 
+// Public headline stats — real aggregates for the landing "by the numbers"
+// band and hero. Cached ~5 min in ai_cache to keep it cheap.
+map.get("/stats", async (c) => {
+  const cached = await c.env.DB.prepare("SELECT payload, refreshed_at FROM ai_cache WHERE key = 'stats:public'")
+    .first<{ payload: string; refreshed_at: number }>();
+  if (cached && now() - cached.refreshed_at < 300) {
+    return c.json(JSON.parse(cached.payload));
+  }
+
+  const t = now();
+  const one = async (sql: string, ...binds: unknown[]) =>
+    Number((await c.env.DB.prepare(sql).bind(...binds).first<{ n: number }>())?.n ?? 0);
+
+  const [
+    eventsUpcoming,
+    tracksTotal,
+    statesCovered,
+    disciplines,
+    endangered,
+    legStates,
+    lawsEnacted,
+    billsActive,
+    supporters,
+    resultsRecorded,
+    liveNow,
+  ] = await Promise.all([
+    one("SELECT COUNT(*) n FROM events WHERE starts_at >= ?", t - 86400),
+    one("SELECT COUNT(*) n FROM tracks"),
+    one("SELECT COUNT(DISTINCT state) n FROM tracks WHERE state IS NOT NULL"),
+    one("SELECT COUNT(DISTINCT discipline) n FROM events WHERE discipline IS NOT NULL"),
+    one("SELECT COUNT(*) n FROM tracks WHERE status = 'endangered'"),
+    one("SELECT COUNT(DISTINCT state) n FROM legislation"),
+    one("SELECT COUNT(*) n FROM legislation WHERE status = 'enacted'"),
+    one("SELECT COUNT(*) n FROM legislation WHERE status IN ('introduced','committee','passed')"),
+    one("SELECT COUNT(*) n FROM advocacy_actions"),
+    one("SELECT COUNT(*) n FROM live_results"),
+    one("SELECT COUNT(DISTINCT event_id) n FROM race_sessions WHERE status = 'running'"),
+  ]);
+
+  const payload = {
+    eventsUpcoming,
+    tracksTotal,
+    statesCovered,
+    disciplines,
+    endangered,
+    legStates,
+    lawsEnacted,
+    billsActive,
+    supporters,
+    resultsRecorded,
+    liveNow,
+  };
+  await c.env.DB.prepare(
+    "INSERT OR REPLACE INTO ai_cache (key, payload, refreshed_at) VALUES ('stats:public', ?, ?)",
+  )
+    .bind(JSON.stringify(payload), now())
+    .run();
+  return c.json(payload);
+});
+
 export default map;

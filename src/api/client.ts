@@ -83,6 +83,12 @@ export const api = {
       endangered: { slug: string; name: string; state?: string; lat: number; lng: number; threat_type?: string }[];
       legislation: { state: string; state_name: string; enacted: number; active: number; total: number }[];
     }>("/map/pins"),
+  mapStats: () =>
+    req<{
+      eventsUpcoming: number; tracksTotal: number; statesCovered: number; disciplines: number;
+      endangered: number; legStates: number; lawsEnacted: number; billsActive: number;
+      supporters: number; resultsRecorded: number; liveNow: number;
+    }>("/map/stats"),
 
   // tracks
   tracks: (params: Record<string, string> = {}) =>
