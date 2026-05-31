@@ -26,11 +26,13 @@ import teampages from "./routes/teampages";
 import notifications from "./routes/notifications";
 import onboarding from "./routes/onboarding";
 import mapRoutes from "./routes/map";
+import venues from "./routes/venues";
 import { ingestFromFeeds } from "./ingest";
 import { runDeadlineSweep } from "./lib/notify";
 import { refreshLegislation } from "./lib/perplexity";
 import { refreshLiveResults } from "./lib/speedhive";
 import { crawlSources } from "./lib/crawl";
+import { importOsmVenues } from "./lib/venues";
 import { renderWithMeta } from "./lib/seo";
 
 const app = new Hono<{ Bindings: Env; Variables: Vars }>();
@@ -65,6 +67,7 @@ api.route("/teampages", teampages);
 api.route("/notifications", notifications);
 api.route("/onboarding", onboarding);
 api.route("/map", mapRoutes);
+api.route("/venues", venues);
 
 api.notFound((c) => c.json({ error: "Not found" }, 404));
 api.onError((err, c) => {
@@ -178,6 +181,12 @@ export default {
         const results = await refreshLiveResults(env);
         // Crawl configured web sources into reviewable events (no-op if none).
         const crawl = await crawlSources(env);
+        // Refresh the national venue canvas from OSM weekly (Mondays) — it's a
+        // heavy national pull, so we don't run it every day.
+        let venuesImport: unknown = "skipped";
+        if (new Date().getUTCDay() === 1) {
+          venuesImport = await importOsmVenues(env);
+        }
         const cutoff = Math.floor(Date.now() / 1000) - 7 * 24 * 60 * 60;
         const reap = await env.DB.prepare(
           "DELETE FROM users WHERE is_demo = 1 AND created_at < ?",
@@ -186,7 +195,7 @@ export default {
           .run();
         console.log(
           "cron run",
-          JSON.stringify({ ingest, deadlines, legislation, results, crawl: { sources: crawl.sources, events: crawl.events }, demoReaped: reap.meta.changes }),
+          JSON.stringify({ ingest, deadlines, legislation, results, crawl: { sources: crawl.sources, events: crawl.events }, venuesImport, demoReaped: reap.meta.changes }),
         );
       })(),
     );

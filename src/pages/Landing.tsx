@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { api } from "../api/client";
+import { api, type VenuePin } from "../api/client";
 import { Badge } from "../components/ui";
+import { VenueMap } from "../components/VenueMap";
 import { Reveal, CountUp, Marquee, AiImage, SpeedLines } from "../components/motion";
 import {
   BrowserFrame,
@@ -140,6 +141,9 @@ export default function Landing() {
           </div>
         </div>
       </section>
+
+      {/* ─── THE NATIONAL CANVAS ──────────────────────────────── */}
+      <HeroCanvas />
 
       {/* ─── TICKER ───────────────────────────────────────────── */}
       <section className="border-b border-white/[0.06] bg-carbon-900/40 py-4">
@@ -508,5 +512,43 @@ function LadderPreview() {
         2 of 3 cleared · the whole crew's behind you
       </div>
     </div>
+  );
+}
+
+// The national canvas, front and center on the homepage — every motorsports
+// venue in America, live. The single most impressive thing we can show.
+function HeroCanvas() {
+  const [venues, setVenues] = useState<VenuePin[]>([]);
+  const [stats, setStats] = useState<{ total: number; states: number } | null>(null);
+
+  useEffect(() => {
+    Promise.all([api.venues({ limit: "10000" }), api.venueStats()])
+      .then(([v, s]) => {
+        setVenues(v.venues);
+        setStats({ total: s.total, states: s.states });
+      })
+      .catch(() => {});
+  }, []);
+
+  if (venues.length === 0) return null;
+
+  return (
+    <section className="container-page py-16">
+      <div className="mb-6 text-center">
+        <p className="eyebrow">The National Canvas</p>
+        <h2 className="mt-2 font-display text-3xl font-extrabold tracking-tightest sm:text-4xl">
+          {stats ? `${stats.total.toLocaleString()} tracks. ${stats.states} states.` : "Every track in America."}
+        </h2>
+        <p className="mx-auto mt-2 max-w-xl text-white/55">
+          The most complete map of grassroots motorsports anywhere — and it grows every day.
+        </p>
+      </div>
+      <VenueMap venues={venues} height="min(64vh, 600px)" intro />
+      <div className="mt-5 text-center">
+        <Link to="/map" className="btn-primary px-6 py-3">
+          Explore the full canvas →
+        </Link>
+      </div>
+    </section>
   );
 }

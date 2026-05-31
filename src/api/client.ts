@@ -24,6 +24,20 @@ import type {
   PlanInfo,
 } from "@shared/types";
 
+/** A venue pin on the national canvas (lightweight; map-render shape). */
+export interface VenuePin {
+  id: string;
+  name: string;
+  category: "oval" | "motocross" | "road" | "drag" | "karting" | "circuit";
+  surface?: string | null;
+  city?: string | null;
+  state?: string | null;
+  lat: number;
+  lng: number;
+  website?: string | null;
+  status: string;
+}
+
 /** Error thrown by the API client; carries the machine-readable code + status. */
 export class ApiErr extends Error {
   constructor(
@@ -95,6 +109,15 @@ export const api = {
     req<{ tracks: Track[] }>(`/tracks?${new URLSearchParams(params)}`),
   track: (slug: string) =>
     req<{ track: Track; events: EventItem[]; threats: Threat[] }>(`/tracks/${slug}`),
+
+  // venues — the national canvas
+  venues: (params: Record<string, string> = {}) =>
+    req<{ venues: VenuePin[] }>(`/venues?${new URLSearchParams(params)}`),
+  venueStats: () =>
+    req<{ total: number; states: number; byCategory: { category: string; n: number }[] }>(
+      "/venues/stats",
+    ),
+  venue: (id: string) => req<{ venue: any }>(`/venues/${id}`),
 
   // riders / pit board
   riders: () => req<{ riders: Rider[] }>("/riders"),

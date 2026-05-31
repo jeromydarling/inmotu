@@ -32,6 +32,7 @@ export interface Env {
   CLOUDFLARE_API_TOKEN?: string; // Browser Rendering token (Workers AI scope)
   FIRECRAWL_API_KEY?: string; // optional fallback for hard/anti-bot sources
   CRAWL_SOURCES?: string; // json: [{url, region?, discipline?, provider?}]
+  OVERPASS_URL?: string; // override/prefer a specific Overpass API mirror
 }
 
 // Hono context variables

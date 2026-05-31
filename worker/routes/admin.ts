@@ -4,6 +4,7 @@ import { ingestEvents, ingestFromFeeds, type FeedEvent } from "../ingest";
 import { requireRole } from "../auth/middleware";
 import { refreshLegislation, refreshDiscoveredEvents } from "../lib/perplexity";
 import { crawlSources, type CrawlSource } from "../lib/crawl";
+import { importOsmVenues } from "../lib/venues";
 
 // Admin tools — manual event ingestion (same engine the Cron Trigger runs).
 const admin = new Hono<{ Bindings: Env; Variables: Vars }>();
@@ -53,6 +54,13 @@ admin.post("/crawl", async (c) => {
       firecrawl: !!c.env.FIRECRAWL_API_KEY,
     },
   });
+});
+
+// Import the national venue canvas from OpenStreetMap (Overpass). Idempotent;
+// safe to re-run. This is what fills the map coast-to-coast.
+admin.post("/import-venues", async (c) => {
+  const r = await importOsmVenues(c.env);
+  return c.json({ ok: !r.error, ...r });
 });
 
 // Approve / reject AI-discovered events.

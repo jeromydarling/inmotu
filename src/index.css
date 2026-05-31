@@ -86,3 +86,22 @@
   background: rgba(255, 255, 255, 0.14);
   border-radius: 8px;
 }
+
+/* Mapbox popups — dark, glassy, on-brand for the national canvas */
+.mapboxgl-popup-content {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 10px 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+.mapboxgl-popup-tip {
+  border-top-color: #f8fafc !important;
+  border-bottom-color: #f8fafc !important;
+}
+.mapboxgl-ctrl-group {
+  background: rgba(20, 24, 34, 0.85) !important;
+  backdrop-filter: blur(8px);
+}
+.mapboxgl-ctrl-group button + button {
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
+}
