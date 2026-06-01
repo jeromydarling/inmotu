@@ -76,14 +76,6 @@ api.route("/racers", racers);
 api.notFound((c) => c.json({ error: "Not found" }, 404));
 api.onError((err, c) => {
   console.error("API error:", err);
-  // TEMP DEBUG: surface the real error to callers sending x-debug: inmotu-trace
-  // so we can diagnose the prod 500 without log access. Revert after fixing.
-  if (c.req.header("x-debug") === "inmotu-trace") {
-    return c.json(
-      { error: "Internal server error", _debug: String((err as Error)?.message ?? err), _stack: String((err as Error)?.stack ?? "").split("\n").slice(0, 4) },
-      500,
-    );
-  }
   return c.json({ error: "Internal server error" }, 500);
 });
 

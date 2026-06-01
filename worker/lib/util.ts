@@ -7,7 +7,12 @@ export const uid = (prefix = "") =>
 
 const enc = new TextEncoder();
 
-/** PBKDF2-SHA256 password hashing (WebCrypto — runs on the edge). */
+/** PBKDF2-SHA256 password hashing (WebCrypto — runs on the edge).
+ * Cloudflare Workers caps PBKDF2 at 100,000 iterations (real runtime enforces
+ * this even though Miniflare/local does not). The iteration count is embedded
+ * in the stored hash so verifyPassword stays compatible with any stored value. */
+const PBKDF2_ITERATIONS = 100_000;
+
 export async function hashPassword(password: string): Promise<string> {
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const key = await crypto.subtle.importKey(
@@ -18,11 +23,11 @@ export async function hashPassword(password: string): Promise<string> {
     ["deriveBits"],
   );
   const bits = await crypto.subtle.deriveBits(
-    { name: "PBKDF2", salt, iterations: 120_000, hash: "SHA-256" },
+    { name: "PBKDF2", salt, iterations: PBKDF2_ITERATIONS, hash: "SHA-256" },
     key,
     256,
   );
-  return `pbkdf2$120000$${b64(salt)}$${b64(new Uint8Array(bits))}`;
+  return `pbkdf2$${PBKDF2_ITERATIONS}$${b64(salt)}$${b64(new Uint8Array(bits))}`;
 }
 
 export async function verifyPassword(
