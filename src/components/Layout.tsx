@@ -102,22 +102,39 @@ export function Header() {
                 {i.label}
               </NavLink>
             ))}
-            <div className="mt-2 flex gap-2">
-              {user ? (
-                <Link to="/app" className="btn-primary btn-sm flex-1" onClick={() => setOpen(false)}>
-                  Dashboard
+            {user ? (
+              <div className="mt-2 flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <Link to="/app" className="btn-primary btn-sm flex-1" onClick={() => setOpen(false)}>
+                    Dashboard
+                  </Link>
+                  {user.role === "admin" && (
+                    <Link to="/app/admin" className="btn-ghost btn-sm flex-1" onClick={() => setOpen(false)}>
+                      Control
+                    </Link>
+                  )}
+                </div>
+                <button
+                  className="btn-ghost btn-sm"
+                  onClick={async () => {
+                    setOpen(false);
+                    await logout();
+                    nav("/");
+                  }}
+                >
+                  Sign out
+                </button>
+              </div>
+            ) : (
+              <div className="mt-2 flex gap-2">
+                <Link to="/login" className="btn-ghost btn-sm flex-1" onClick={() => setOpen(false)}>
+                  Sign in
                 </Link>
-              ) : (
-                <>
-                  <Link to="/login" className="btn-ghost btn-sm flex-1" onClick={() => setOpen(false)}>
-                    Sign in
-                  </Link>
-                  <Link to="/register" className="btn-primary btn-sm flex-1" onClick={() => setOpen(false)}>
-                    Start free
-                  </Link>
-                </>
-              )}
-            </div>
+                <Link to="/register" className="btn-primary btn-sm flex-1" onClick={() => setOpen(false)}>
+                  Start free
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       )}
