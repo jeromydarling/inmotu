@@ -143,13 +143,15 @@ export default function Admin() {
         {smoke && (
           <div className="mt-4 space-y-2">
             {smoke.map((r) => (
-              <div key={r.engine} className="flex items-center gap-3 rounded-lg border border-white/[0.06] bg-carbon-850 px-3 py-2 text-sm">
-                <span className={`shrink-0 text-xs font-bold uppercase ${r.status === "ok" ? "text-flag-green" : r.status === "fail" ? "text-flag-red" : "text-white/35"}`}>
-                  {r.status === "ok" ? "● ok" : r.status === "fail" ? "✕ fail" : "○ skip"}
-                </span>
-                <span className="w-28 shrink-0 font-semibold capitalize text-white">{r.engine.replace("_", " ")}</span>
-                <span className="min-w-0 flex-1 truncate text-white/55">{r.detail}</span>
-                {r.ms != null && <span className="shrink-0 text-xs text-white/35">{r.ms}ms</span>}
+              <div key={r.engine} className="rounded-lg border border-white/[0.06] bg-carbon-850 px-3 py-2 text-sm">
+                <div className="flex items-center gap-3">
+                  <span className={`shrink-0 text-xs font-bold uppercase ${r.status === "ok" ? "text-flag-green" : r.status === "fail" ? "text-flag-red" : "text-white/35"}`}>
+                    {r.status === "ok" ? "● ok" : r.status === "fail" ? "✕ fail" : "○ skip"}
+                  </span>
+                  <span className="flex-1 font-semibold capitalize text-white">{r.engine.replace("_", " ")}</span>
+                  {r.ms != null && <span className="shrink-0 text-xs text-white/35">{r.ms}ms</span>}
+                </div>
+                <p className="mt-1 break-words text-xs text-white/55">{r.detail}</p>
               </div>
             ))}
           </div>
