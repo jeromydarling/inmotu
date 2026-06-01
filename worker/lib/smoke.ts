@@ -20,6 +20,16 @@ async function timed<T>(fn: () => Promise<T>): Promise<{ v: T; ms: number }> {
   return { v, ms: Date.now() - t0 };
 }
 
+/** Read an error response body (text) so the smoke detail shows the real reason. */
+async function errBody(res: Response): Promise<string> {
+  try {
+    const t = (await res.text()).replace(/\s+/g, " ").trim();
+    return t ? ` — ${t.slice(0, 180)}` : "";
+  } catch {
+    return "";
+  }
+}
+
 // Perplexity: tiny cited query; pass if we get a 200 with content.
 async function probePerplexity(env: Env): Promise<SmokeResult> {
   if (!env.PERPLEXITY_API_KEY) return { engine: "perplexity", status: "skipped", detail: "no key" };
@@ -36,7 +46,7 @@ async function probePerplexity(env: Env): Promise<SmokeResult> {
         }),
       }),
     );
-    if (!res.ok) return { engine: "perplexity", status: "fail", detail: `HTTP ${res.status}`, ms };
+    if (!res.ok) return { engine: "perplexity", status: "fail", detail: `HTTP ${res.status}${await errBody(res)}`, ms };
     const data = (await res.json()) as any;
     const txt = data?.choices?.[0]?.message?.content ?? "";
     return { engine: "perplexity", status: "ok", detail: `responded: "${String(txt).slice(0, 24)}"`, ms };
@@ -55,7 +65,7 @@ async function probeCivic(env: Env): Promise<SmokeResult> {
           `&address=20500&levels=administrativeArea1&roles=legislatorUpperBody`,
       ),
     );
-    if (!res.ok) return { engine: "civic", status: "fail", detail: `HTTP ${res.status}`, ms };
+    if (!res.ok) return { engine: "civic", status: "fail", detail: `HTTP ${res.status}${await errBody(res)}`, ms };
     const data = (await res.json()) as any;
     return { engine: "civic", status: "ok", detail: `${(data.officials ?? []).length} officials for 20500`, ms };
   } catch (e) {
