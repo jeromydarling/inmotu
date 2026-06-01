@@ -33,6 +33,28 @@ export default function Admin() {
     }
   }
 
+  // Launch sweep — run the Upper Midwest beachhead population, one slice at a
+  // time, until the daily budget is hit or the region is fully discovered.
+  const [sweeping, setSweeping] = useState(false);
+  const [sweepLog, setSweepLog] = useState<string[]>([]);
+  async function runSweep() {
+    setSweeping(true);
+    setSweepLog([]);
+    try {
+      for (let i = 0; i < 40; i++) {
+        const r = await api.adminSweep();
+        if (!r.configured) { setSweepLog((l) => [...l, "Perplexity key not configured."]); break; }
+        if (r.done) { setSweepLog((l) => [...l, "✓ Region fully discovered (or budget reached)."]); break; }
+        if (!r.sector) { setSweepLog((l) => [...l, "Paused — daily budget reached. Run again tomorrow."]); break; }
+        setSweepLog((l) => [`${r.sector} · ${r.state} → ${r.events ?? 0} events, ${r.crews ?? 0} crews`, ...l].slice(0, 30));
+        await new Promise((res) => setTimeout(res, 400));
+      }
+      loadCost();
+    } finally {
+      setSweeping(false);
+    }
+  }
+
   function loadCost() {
     api.adminCost().then(setCost).catch(() => setCost(null));
   }
@@ -154,6 +176,28 @@ export default function Admin() {
                 <p className="mt-1 break-words text-xs text-white/55">{r.detail}</p>
               </div>
             ))}
+          </div>
+        )}
+      </section>
+
+      {/* Launch market — populate the Upper Midwest beachhead */}
+      <section className="panel mb-6 p-6">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="font-display text-lg font-bold">Populate launch market</h2>
+            <p className="mt-1 text-sm text-white/55">
+              Discover real beginner events + local crews across the Upper Midwest (MN, WI, IA, ND,
+              SD, MI, IL, IN). Runs within the daily Perplexity budget — re-run across days to fill
+              it in. Found crews land in the review queue below.
+            </p>
+          </div>
+          <button className="btn-primary shrink-0" disabled={sweeping} onClick={runSweep}>
+            {sweeping ? "Populating…" : "Populate"}
+          </button>
+        </div>
+        {sweepLog.length > 0 && (
+          <div className="mt-4 max-h-52 space-y-1 overflow-y-auto rounded-lg border border-white/[0.06] bg-carbon-850 p-3 font-mono text-xs text-white/60">
+            {sweepLog.map((l, i) => <div key={i}>{l}</div>)}
           </div>
         )}
       </section>

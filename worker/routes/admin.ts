@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import type { Env, Vars } from "../types";
 import { ingestEvents, ingestFromFeeds, type FeedEvent } from "../ingest";
 import { requireRole } from "../auth/middleware";
-import { ensureDiscovered, getCrews } from "../lib/discovery";
+import { ensureDiscovered, getCrews, sweepLaunchMarket } from "../lib/discovery";
 import { refreshLegislation, refreshDiscoveredEvents } from "../lib/perplexity";
 import { crawlSources, type CrawlSource } from "../lib/crawl";
 import { importOsmVenues, enrichVenues, linkVenuesToTracks } from "../lib/venues";
@@ -121,6 +121,13 @@ admin.post("/crews/:id/review", async (c) => {
 admin.post("/smoke", async (c) => {
   const results = await runSmoke(c.env);
   return c.json({ results });
+});
+
+// Launch sweep: discover the next un-done (sector, state) in the Upper Midwest.
+// Call repeatedly to fill in the beachhead within the daily budget.
+admin.post("/sweep", async (c) => {
+  const r = await sweepLaunchMarket(c.env);
+  return c.json({ ok: true, ...r, configured: !!c.env.PERPLEXITY_API_KEY });
 });
 
 // Funnel: last-14-day totals per tracked event, so we can SEE where users drop.

@@ -89,6 +89,11 @@ export const api = {
       pending: { events: number; crews: number };
       engines: Record<string, boolean>;
     }>("/admin/cost"),
+  adminSweep: () =>
+    req<{ ok: boolean; done: boolean; sector?: string; state?: string; events?: number; crews?: number; configured: boolean }>(
+      "/admin/sweep",
+      { method: "POST" },
+    ),
   adminDiscover: (sector: string, state: string) =>
     req<{ ok: boolean; ran: boolean; events: number; crews: number; configured: boolean }>(
       `/admin/discover/${sector}/${state}`,

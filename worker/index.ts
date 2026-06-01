@@ -35,6 +35,7 @@ import { runDeadlineSweep } from "./lib/notify";
 import { refreshLegislation } from "./lib/perplexity";
 import { refreshLiveResults } from "./lib/speedhive";
 import { crawlSources } from "./lib/crawl";
+import { sweepLaunchMarket } from "./lib/discovery";
 import { importOsmVenues, enrichVenues, linkVenuesToTracks } from "./lib/venues";
 import { renderWithMeta } from "./lib/seo";
 
@@ -213,6 +214,9 @@ export default {
         const results = await refreshLiveResults(env);
         // Crawl configured web sources into reviewable events (no-op if none).
         const crawl = await crawlSources(env);
+        // Fill in the launch market (Upper Midwest) one slice per run, within
+        // budget — beachhead-first population of real events + crews.
+        const launchSweep = await sweepLaunchMarket(env);
         // Refresh the national venue canvas from OSM weekly (Mondays) — it's a
         // heavy national pull, so we don't run it every day.
         let venuesImport: unknown = "skipped";
@@ -230,7 +234,7 @@ export default {
           .run();
         console.log(
           "cron run",
-          JSON.stringify({ ingest, deadlines, legislation, results, crawl: { sources: crawl.sources, events: crawl.events }, venuesImport, demoReaped: reap.meta.changes }),
+          JSON.stringify({ ingest, deadlines, legislation, results, crawl: { sources: crawl.sources, events: crawl.events }, launchSweep, venuesImport, demoReaped: reap.meta.changes }),
         );
       })(),
     );

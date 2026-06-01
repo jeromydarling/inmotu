@@ -306,6 +306,36 @@ export async function ensureDiscovered(
   return { ran: true, events: eventCount, crews: crewCount };
 }
 
+// The launch beachhead: Upper Midwest. Depth-first over breadth — populate one
+// region with real data before expanding. Sector order favors the region's
+// strengths (MX/dirt/short-track country, plus road racing at Road America/BIR).
+export const UPPER_MIDWEST_STATES = ["MN", "WI", "IA", "ND", "SD", "MI", "IL", "IN"];
+const LAUNCH_SECTORS = ["motocross", "karting_dirt", "drag", "bmx", "roadrace", "karting_sprint", "autocross"];
+
+/**
+ * One step of the launch sweep: find the next un-discovered (sector, state) in
+ * the Upper Midwest and run discovery for it (respecting budget + cache). Called
+ * repeatedly (cron/admin) to fill the region in over a few days within budget.
+ * Returns what it did, or { done: true } when every slice is warm.
+ */
+export async function sweepLaunchMarket(
+  env: Env,
+): Promise<{ done: boolean; sector?: string; state?: string; events?: number; crews?: number }> {
+  if (!env.PERPLEXITY_API_KEY) return { done: true };
+  for (const sector of LAUNCH_SECTORS) {
+    for (const state of UPPER_MIDWEST_STATES) {
+      const warm = await cacheGet<true>(env, `discover:${sector}:${state}`);
+      if (warm) continue;
+      const r = await ensureDiscovered(env, sector, state);
+      // ensureDiscovered no-ops (ran:false) if budget is exhausted or it lost
+      // the lock — in that case stop this pass and try again next run.
+      if (!r.ran) return { done: false, sector, state, events: 0, crews: 0 };
+      return { done: false, sector, state, events: r.events, crews: r.crews };
+    }
+  }
+  return { done: true };
+}
+
 /** Read approved (or all, for admin) crews for a sector+state. */
 export async function getCrews(
   env: Env,
