@@ -41,7 +41,7 @@ async function probePerplexity(env: Env): Promise<SmokeResult> {
         body: JSON.stringify({
           model: "sonar",
           messages: [{ role: "user", content: "Reply with the single word: ok" }],
-          max_tokens: 5,
+          max_tokens: 16,
           temperature: 0,
         }),
       }),

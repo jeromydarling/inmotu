@@ -137,14 +137,54 @@ export interface Official {
   url?: string;
 }
 
+// ZIP → state (lightweight, offline). Uses the first-3-digits (ZCTA prefix)
+// ranges so we can route a family to their state legislature with no external
+// dependency. Ranges are inclusive on the 3-digit prefix (000–999).
+function stateFromZip(zip: string): string | null {
+  const z = Number(zip.slice(0, 3));
+  const ranges: [number, number, string][] = [
+    [5, 5, "VT"], [6, 9, "PR"], [10, 27, "MA"], [28, 29, "RI"], [30, 38, "NH"],
+    [39, 49, "ME"], [50, 54, "VT"], [55, 59, "MA"], [60, 69, "CT"], [70, 89, "NJ"],
+    [100, 149, "NY"], [150, 196, "PA"], [197, 199, "DE"], [200, 205, "DC"],
+    [206, 219, "MD"], [220, 246, "VA"], [247, 268, "WV"], [270, 289, "NC"],
+    [290, 299, "SC"], [300, 319, "GA"], [320, 349, "FL"], [350, 369, "AL"],
+    [370, 385, "TN"], [386, 397, "MS"], [398, 399, "GA"], [400, 427, "KY"],
+    [430, 459, "OH"], [460, 479, "IN"], [480, 499, "MI"], [500, 528, "IA"],
+    [530, 549, "WI"], [550, 567, "MN"], [570, 577, "SD"], [580, 588, "ND"],
+    [590, 599, "MT"], [600, 629, "IL"], [630, 658, "MO"], [660, 679, "KS"],
+    [680, 693, "NE"], [700, 714, "LA"], [716, 729, "AR"], [730, 749, "OK"],
+    [750, 799, "TX"], [800, 816, "CO"], [820, 831, "WY"], [832, 838, "ID"],
+    [840, 847, "UT"], [850, 865, "AZ"], [870, 884, "NM"], [889, 898, "NV"],
+    [900, 961, "CA"], [967, 968, "HI"], [970, 979, "OR"], [980, 994, "WA"],
+    [995, 999, "AK"],
+  ];
+  for (const [lo, hi, st] of ranges) if (z >= lo && z <= hi) return st;
+  return null;
+}
+
+const STATE_LEGISLATURE_FINDER: Record<string, string> = {
+  // "Find your legislator" pages — official, always-on, no key. (Common ones;
+  // falls back to openstates.org for any state not listed.)
+  MN: "https://www.gis.lcc.mn.gov/iMaps/districts/",
+  IA: "https://www.legis.iowa.gov/legislators/find",
+  WI: "https://maps.legis.wisconsin.gov/",
+  GA: "https://www.legis.ga.gov/find-my-legislator",
+  TX: "https://wrm.capitol.texas.gov/home",
+  NC: "https://www.ncleg.gov/FindYourLegislators",
+};
+const openStatesFinder = (state: string) =>
+  `https://openstates.org/find_your_legislator/?state=${state.toLowerCase()}`;
+
 /**
- * Resolve a user's state legislators from ZIP via Google Civic (deterministic,
- * accurate). Cached in D1 for 30 days. Returns null if not configured.
+ * Resolve a family's state legislators by ZIP. Uses Google Civic when a working
+ * key is configured; otherwise (Civic's representatives endpoint was retired by
+ * Google in 2025) degrades gracefully to the user's state + an official
+ * "find your legislator" link that always works, no key required. Cached 30d.
  */
 export async function lookupLegislators(
   env: Env,
   zip: string,
-): Promise<{ state: string | null; officials: Official[] } | null> {
+): Promise<{ state: string | null; officials: Official[]; finderUrl?: string } | null> {
   if (!/^\d{5}$/.test(zip)) return null;
 
   const cached = await env.DB.prepare(
@@ -156,39 +196,43 @@ export async function lookupLegislators(
     return { state: cached.state, officials: JSON.parse(cached.payload) };
   }
 
-  if (!env.GOOGLE_CIVIC_API_KEY) return null;
-  // Cost guard: public ZIP endpoint — cap daily Civic lookups.
-  if (!(await tryConsume(env, "civic"))) {
-    console.warn("civic daily budget reached — skipping lookup");
-    return null;
+  // Always derive the state offline so the feature works with zero config.
+  const state = stateFromZip(zip);
+  const finderUrl = state ? STATE_LEGISLATURE_FINDER[state] ?? openStatesFinder(state) : undefined;
+
+  // If a Civic-style key is present, try it for richer named officials. The
+  // legacy representatives endpoint is gone, so this is best-effort: on any
+  // failure we keep the graceful state+finder result.
+  if (env.GOOGLE_CIVIC_API_KEY && (await tryConsume(env, "civic"))) {
+    try {
+      const url =
+        `https://www.googleapis.com/civicinfo/v2/representatives?key=${env.GOOGLE_CIVIC_API_KEY}` +
+        `&address=${encodeURIComponent(zip)}&levels=administrativeArea1&roles=legislatorUpperBody&roles=legislatorLowerBody`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = (await res.json()) as any;
+        const officials: Official[] = (data.officials ?? []).map((o: any) => ({
+          name: o.name,
+          office: "State Legislator",
+          party: o.party,
+          emails: o.emails,
+          phones: o.phones,
+          url: o.urls?.[0],
+        }));
+        const st = data?.normalizedInput?.state ?? state;
+        await env.DB.prepare(
+          "INSERT OR REPLACE INTO legislator_cache (zip, state, payload, refreshed_at) VALUES (?, ?, ?, ?)",
+        )
+          .bind(zip, st, JSON.stringify(officials), now())
+          .run();
+        return { state: st, officials, finderUrl: officials.length ? undefined : finderUrl };
+      }
+    } catch (e) {
+      console.error("civic lookup failed (using state+finder fallback)", e);
+    }
   }
-  try {
-    const url =
-      `https://www.googleapis.com/civicinfo/v2/representatives?key=${env.GOOGLE_CIVIC_API_KEY}` +
-      `&address=${encodeURIComponent(zip)}&levels=administrativeArea1&roles=legislatorUpperBody&roles=legislatorLowerBody`;
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const data = (await res.json()) as any;
-    const officials: Official[] = (data.officials ?? []).map((o: any) => ({
-      name: o.name,
-      office: "State Legislator",
-      party: o.party,
-      emails: o.emails,
-      phones: o.phones,
-      url: o.urls?.[0],
-    }));
-    // crude state extraction from the normalized input
-    const state: string | null = data?.normalizedInput?.state ?? null;
-    await env.DB.prepare(
-      "INSERT OR REPLACE INTO legislator_cache (zip, state, payload, refreshed_at) VALUES (?, ?, ?, ?)",
-    )
-      .bind(zip, state, JSON.stringify(officials), now())
-      .run();
-    return { state, officials };
-  } catch (e) {
-    console.error("civic lookup failed", e);
-    return null;
-  }
+
+  return { state, officials: [], finderUrl };
 }
 
 const STATE_NAMES: Record<string, string> = {

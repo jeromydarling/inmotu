@@ -195,7 +195,7 @@ export const api = {
       "/advocacy/endangered",
     ),
   legislators: (zip: string) =>
-    req<{ configured: boolean; state: string | null; officials: { name: string; office: string; party?: string; emails?: string[]; phones?: string[]; url?: string }[] }>(
+    req<{ configured: boolean; state: string | null; finderUrl?: string; officials: { name: string; office: string; party?: string; emails?: string[]; phones?: string[]; url?: string }[] }>(
       `/advocacy/legislators?zip=${encodeURIComponent(zip)}`,
     ),
   support: (kind: string, target_type: string, target_id: string) =>

@@ -24,10 +24,13 @@ export default function Frontline() {
   const [endangered, setEndangered] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Legislator lookup by ZIP (Google Civic, cached server-side).
+  // Legislator lookup by ZIP. Returns named officials when a provider is
+  // configured, otherwise the user's state + an official "find your legislator"
+  // link that always works.
   const [zip, setZip] = useState(user?.zip ?? "");
   const [officials, setOfficials] = useState<any[] | null>(null);
   const [repState, setRepState] = useState<string | null>(null);
+  const [finderUrl, setFinderUrl] = useState<string | null>(null);
   const [repBusy, setRepBusy] = useState(false);
 
   useEffect(() => {
@@ -45,13 +48,11 @@ export default function Frontline() {
     setRepBusy(true);
     try {
       const r = await api.legislators(zip);
-      if (!r.configured) {
-        toast.error("Legislator lookup activates once the Civic API key is set.");
-        setOfficials([]);
-      } else {
-        setOfficials(r.officials);
-        setRepState(r.state);
-        if (r.officials.length === 0) toast.error("No state legislators found for that ZIP.");
+      setOfficials(r.officials);
+      setRepState(r.state);
+      setFinderUrl(r.finderUrl ?? null);
+      if (r.officials.length === 0 && !r.finderUrl && !r.state) {
+        toast.error("Couldn't resolve that ZIP. Double-check it?");
       }
     } catch {
       toast.error("Lookup failed. Try again.");
@@ -195,6 +196,19 @@ export default function Frontline() {
               </div>
             ))}
           </div>
+          </div>
+        )}
+        {/* No named officials available — point them to the official state
+            "find your legislator" tool (always works, no key needed). */}
+        {officials && officials.length === 0 && finderUrl && (
+          <div className="mt-4 rounded-xl border border-ignition/20 bg-ignition/[0.06] p-4">
+            <p className="text-sm text-white/75">
+              {repState ? `You're in ${repState}. ` : ""}Look up your exact state legislators on the
+              official finder, then come back to make your voice heard on these bills.
+            </p>
+            <a href={finderUrl} target="_blank" rel="noreferrer" className="btn-primary btn-sm mt-3">
+              Find my {repState ?? "state"} legislators ↗
+            </a>
           </div>
         )}
       </div>
