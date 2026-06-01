@@ -56,7 +56,7 @@ start.get("/:sector", async (c) => {
     `SELECT e.slug, e.title, e.discipline, e.level, e.starts_at, e.source, e.needs_review,
             t.name AS track_name, t.city AS track_city, t.state AS track_state
      FROM events e LEFT JOIN tracks t ON t.id = e.track_id
-     WHERE e.starts_at >= ?
+     WHERE e.starts_at >= ? AND e.demo = 0 AND e.needs_review = 0
        AND e.discipline IN (${discPlaceholders})
        ${state ? "AND (t.state = ? OR e.region = ?)" : ""}
      ORDER BY (e.level = 'beginner') DESC, e.starts_at ASC

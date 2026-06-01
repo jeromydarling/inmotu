@@ -45,9 +45,26 @@ events.get("/", async (c) => {
   binds.push(from ? Number(from) : now() - 86400);
   // Hide AI-discovered events pending review unless explicitly included.
   if (c.req.query("include_unverified") !== "1") where.push("e.needs_review = 0");
+  // Hide fabricated demo/seed events by default — a curious family should see
+  // REAL events or an honest empty state, never a made-up race.
+  if (c.req.query("include_demo") !== "1") where.push("e.demo = 0");
+
+  // "Near me": ?lat=&lng=&radius=<miles>. Bounding-box prefilter in SQL (fast,
+  // index-friendly), exact haversine distance computed + sorted after.
+  const lat = Number(c.req.query("lat"));
+  const lng = Number(c.req.query("lng"));
+  const radius = Number(c.req.query("radius")) || 100;
+  const geo = Number.isFinite(lat) && Number.isFinite(lng);
+  if (geo) {
+    const dLat = radius / 69; // ~69 miles per degree latitude
+    const dLng = radius / (69 * Math.max(0.1, Math.cos((lat * Math.PI) / 180)));
+    where.push("t.lat BETWEEN ? AND ? AND t.lng BETWEEN ? AND ?");
+    binds.push(lat - dLat, lat + dLat, lng - dLng, lng + dLng);
+  }
 
   const sql = `
-    SELECT e.*, t.name AS track_name, t.city AS track_city, t.state AS track_state
+    SELECT e.*, t.name AS track_name, t.city AS track_city, t.state AS track_state,
+           t.lat AS track_lat, t.lng AS track_lng
     FROM events e LEFT JOIN tracks t ON t.id = e.track_id
     ${where.length ? "WHERE " + where.join(" AND ") : ""}
     ORDER BY e.starts_at ASC LIMIT 200`;
@@ -67,9 +84,27 @@ events.get("/", async (c) => {
     savedSet = new Set(saved.results.map((r) => r.event_id));
   }
 
-  return c.json({
-    events: results.map((e) => ({ ...e, saved: savedSet.has(e.id as string) })),
-  });
+  let rows = results.map((e) => ({ ...e, saved: savedSet.has(e.id as string) }));
+
+  // When geo-filtering, attach exact distance + sort nearest-first.
+  if (geo) {
+    const R = 3958.8; // earth radius, miles
+    const toRad = (d: number) => (d * Math.PI) / 180;
+    rows = rows
+      .map((e: any) => {
+        if (e.track_lat == null || e.track_lng == null) return { ...e, distance_mi: null };
+        const a =
+          Math.sin(toRad((e.track_lat - lat) / 1) / 2) ** 2 +
+          Math.cos(toRad(lat)) * Math.cos(toRad(e.track_lat)) *
+            Math.sin(toRad((e.track_lng - lng) / 1) / 2) ** 2;
+        const d = 2 * R * Math.asin(Math.min(1, Math.sqrt(a)));
+        return { ...e, distance_mi: Math.round(d) };
+      })
+      .filter((e: any) => e.distance_mi == null || e.distance_mi <= radius)
+      .sort((a: any, b: any) => (a.distance_mi ?? 1e9) - (b.distance_mi ?? 1e9));
+  }
+
+  return c.json({ events: rows });
 });
 
 // GET /api/events/:slug — detail

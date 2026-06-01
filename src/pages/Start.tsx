@@ -51,7 +51,7 @@ export default function Start() {
               return (
                 <button
                   key={id}
-                  onClick={() => setPicked(id)}
+                  onClick={() => { setPicked(id); api.trackEvent("start_sector", id); }}
                   className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-carbon-850 p-5 text-left transition hover:border-white/25"
                 >
                   <span className="absolute inset-y-0 left-0 w-1" style={{ background: ACCENT[id] }} />

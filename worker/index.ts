@@ -29,6 +29,7 @@ import mapRoutes from "./routes/map";
 import venues from "./routes/venues";
 import start from "./routes/start";
 import racers from "./routes/racers";
+import analytics from "./routes/analytics";
 import { ingestFromFeeds } from "./ingest";
 import { runDeadlineSweep } from "./lib/notify";
 import { refreshLegislation } from "./lib/perplexity";
@@ -72,6 +73,7 @@ api.route("/map", mapRoutes);
 api.route("/venues", venues);
 api.route("/start", start);
 api.route("/racers", racers);
+api.route("/analytics", analytics);
 
 api.notFound((c) => c.json({ error: "Not found" }, 404));
 api.onError((err, c) => {

@@ -39,6 +39,7 @@ export function OnboardingChecklist({ firstName }: { firstName?: string }) {
       setSavingSectors(true);
       try {
         await api.setSectors(picking);
+        picking.forEach((s) => api.trackEvent("sector_pick", s));
         await refresh();
       } finally {
         setSavingSectors(false);

@@ -21,6 +21,7 @@ export default function Register() {
     setBusy(true);
     try {
       const { user } = await api.register(form);
+      api.trackEvent("signup");
       setUser(user);
       nav("/app");
     } catch (e: any) {

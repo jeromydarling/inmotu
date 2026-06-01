@@ -22,6 +22,27 @@ export default function Grid() {
   // Scope to the user's sectors by default when they have any.
   const mySectorDisc = sectorDisciplines(user?.sectors);
   const [mineOnly, setMineOnly] = useState(mySectorDisc.length > 0);
+  // "Near me" — browser geolocation + radius.
+  const [geo, setGeo] = useState<{ lat: number; lng: number } | null>(null);
+  const [radius, setRadius] = useState(100);
+  const [geoBusy, setGeoBusy] = useState(false);
+
+  function useMyLocation() {
+    if (!navigator.geolocation) return toast.error("Location isn't available on this device.");
+    setGeoBusy(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setGeo({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        api.trackEvent("near_me");
+        setGeoBusy(false);
+      },
+      () => {
+        toast.error("Couldn't get your location. Check permissions?");
+        setGeoBusy(false);
+      },
+      { timeout: 8000 },
+    );
+  }
 
   useEffect(() => {
     api.reference().then((r) => setDisciplines(r.disciplines)).catch(() => {});
@@ -34,6 +55,11 @@ export default function Grid() {
     else if (mineOnly && mySectorDisc.length) params.disciplines = mySectorDisc.join(",");
     if (level) params.level = level;
     if (q) params.q = q;
+    if (geo) {
+      params.lat = String(geo.lat);
+      params.lng = String(geo.lng);
+      params.radius = String(radius);
+    }
     const t = setTimeout(() => {
       api
         .events(params)
@@ -42,7 +68,7 @@ export default function Grid() {
         .finally(() => setLoading(false));
     }, q ? 250 : 0);
     return () => clearTimeout(t);
-  }, [discipline, level, q, mineOnly]);
+  }, [discipline, level, q, mineOnly, geo, radius]);
 
   async function toggleSave(e: EventItem) {
     if (!user) {
@@ -88,6 +114,26 @@ export default function Grid() {
           weekend that matters.
         </p>
       </header>
+
+      {/* Near me */}
+      <div className="panel mb-3 flex flex-wrap items-center gap-3 p-4">
+        {geo ? (
+          <>
+            <span className="flex items-center gap-1.5 text-sm font-semibold text-flag-green">
+              <span className="h-2 w-2 rounded-full bg-flag-green" /> Showing events near you
+            </span>
+            <select className="field max-w-[9rem]" value={radius} onChange={(e) => setRadius(Number(e.target.value))}>
+              {[25, 50, 100, 200, 500].map((r) => <option key={r} value={r}>within {r} mi</option>)}
+            </select>
+            <button className="text-xs text-white/45 hover:text-white" onClick={() => setGeo(null)}>clear</button>
+          </>
+        ) : (
+          <button className="btn-primary btn-sm" disabled={geoBusy} onClick={useMyLocation}>
+            {geoBusy ? "Locating…" : "📍 Show races near me"}
+          </button>
+        )}
+        <p className="ml-auto text-xs text-white/40">Find what's running this weekend, close to home.</p>
+      </div>
 
       {/* Filters */}
       <div className="panel mb-6 flex flex-col gap-3 p-4 sm:flex-row sm:items-center">

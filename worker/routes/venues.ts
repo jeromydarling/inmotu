@@ -72,7 +72,7 @@ venues.get("/:id", async (c) => {
       `SELECT slug, title, discipline, starts_at,
               EXISTS(SELECT 1 FROM race_sessions rs WHERE rs.event_id = events.id AND rs.status='running') AS live
        FROM events
-       WHERE track_id = ? AND needs_review = 0 AND starts_at >= ?
+       WHERE track_id = ? AND needs_review = 0 AND demo = 0 AND starts_at >= ?
        ORDER BY starts_at ASC LIMIT 8`,
     )
       .bind(v.track_id, Math.floor(Date.now() / 1000) - 86400)

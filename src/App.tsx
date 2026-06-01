@@ -1,6 +1,7 @@
 import { Routes, Route, Outlet, Navigate, useLocation } from "react-router-dom";
 import { Header, Footer } from "./components/Layout";
 import { useAuth } from "./state/auth";
+import { api } from "./api/client";
 import { Spinner } from "./components/ui";
 import { useEffect } from "react";
 
@@ -27,9 +28,11 @@ import Admin from "./pages/Admin";
 
 function Shell() {
   const { pathname } = useLocation();
-  // Scroll to top + replay a soft fade on every route change.
+  // Scroll to top + replay a soft fade on every route change, and log a coarse
+  // pageview (path only, no query) so we can see where traffic actually goes.
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+    api.trackEvent("pageview", pathname.replace(/\/[0-9a-f-]{8,}.*$/, "/:id"));
   }, [pathname]);
   return (
     <div className="flex min-h-full flex-col">

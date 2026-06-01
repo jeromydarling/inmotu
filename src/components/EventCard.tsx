@@ -74,6 +74,9 @@ export function EventCard({
         </p>
 
         <div className="mt-2 flex items-center gap-3 text-xs text-white/40">
+          {(e as any).distance_mi != null && (
+            <span className="font-semibold text-flag-green">{(e as any).distance_mi} mi away</span>
+          )}
           {e.entry_fee_cents != null && <span>Entry {fmtMoney(e.entry_fee_cents)}</span>}
           {e.body_slug && <span className="uppercase">{e.body_slug}</span>}
         </div>

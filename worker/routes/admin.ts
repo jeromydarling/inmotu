@@ -123,6 +123,25 @@ admin.post("/smoke", async (c) => {
   return c.json({ results });
 });
 
+// Funnel: last-14-day totals per tracked event, so we can SEE where users drop.
+admin.get("/funnel", async (c) => {
+  const since = new Date(Date.now() - 14 * 86400 * 1000).toISOString().slice(0, 10);
+  const { results } = await c.env.DB.prepare(
+    "SELECT event, SUM(count) AS n FROM analytics WHERE day >= ? GROUP BY event ORDER BY n DESC",
+  )
+    .bind(since)
+    .all();
+  // Top labels for the discovery/sector dimensions (what people actually want).
+  const top = await c.env.DB.prepare(
+    `SELECT event, label, SUM(count) AS n FROM analytics
+     WHERE day >= ? AND label IS NOT NULL AND event IN ('start_sector','sector_pick','zip_search','discovery_run')
+     GROUP BY event, label ORDER BY n DESC LIMIT 20`,
+  )
+    .bind(since)
+    .all();
+  return c.json({ since, totals: results, top: top.results });
+});
+
 // Cost dashboard: today's spend vs cap per paid API, which engines are
 // configured, and pending review queues. Powers the admin Control panel.
 admin.get("/cost", async (c) => {

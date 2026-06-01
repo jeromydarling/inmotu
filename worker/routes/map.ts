@@ -15,7 +15,7 @@ map.get("/pins", async (c) => {
             tr.lat, tr.lng, tr.name AS track_name,
             EXISTS(SELECT 1 FROM race_sessions rs WHERE rs.event_id = e.id AND rs.status = 'running') AS live
      FROM events e JOIN tracks tr ON tr.id = e.track_id
-     WHERE e.needs_review = 0 AND tr.lat IS NOT NULL AND tr.lng IS NOT NULL
+     WHERE e.needs_review = 0 AND e.demo = 0 AND tr.lat IS NOT NULL AND tr.lng IS NOT NULL
        AND e.starts_at BETWEEN ? AND ?
      ORDER BY e.starts_at ASC LIMIT 300`,
   )

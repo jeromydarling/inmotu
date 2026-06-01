@@ -66,6 +66,22 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  // analytics — fire-and-forget; never blocks or throws.
+  trackEvent: (event: string, label?: string) => {
+    try {
+      fetch("/api/analytics/track", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event, label }),
+        keepalive: true,
+      }).catch(() => {});
+    } catch { /* ignore */ }
+  },
+  adminFunnel: () =>
+    req<{ since: string; totals: { event: string; n: number }[]; top: { event: string; label: string; n: number }[] }>(
+      "/admin/funnel",
+    ),
+
   // admin — cost dashboard + discovery/crew controls
   adminCost: () =>
     req<{
