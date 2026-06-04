@@ -61,7 +61,10 @@
     "STRIPE_PRICE_TOWER": "price_1TctKGRtg7lL4xBX8dd2ZBHp",
     "STRIPE_PRICE_YEARBOOK": "price_1Tcu84Rtg7lL4xBXWvGYDpTY",
     "LULU_ENV": "sandbox",
-    "MAPBOX_TOKEN": "",
+    // MAPBOX_TOKEN (publishable pk.* token) is set as an ENCRYPTED SECRET in
+    // the Cloudflare dashboard (Worker → Settings → Variables), not here.
+    // Secrets survive deploys; keeping it out of config avoids the empty-string
+    // var that previously shadowed the real token and broke the map.
     "INGEST_FEEDS": ""
   }
 }

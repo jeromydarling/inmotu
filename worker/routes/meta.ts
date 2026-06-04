@@ -41,7 +41,8 @@ meta.get("/reference", async (c) => {
 // Public runtime config for the SPA (e.g. the Mapbox publishable token).
 meta.get("/config", (c) =>
   c.json({
-    mapbox_token: c.env.MAPBOX_TOKEN ?? null,
+    // Treat an empty-string var the same as missing (?? alone keeps "").
+    mapbox_token: c.env.MAPBOX_TOKEN || null,
     app_url: c.env.APP_URL,
   }),
 );
