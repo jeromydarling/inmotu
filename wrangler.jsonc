@@ -46,6 +46,11 @@
   "ai": {
     "binding": "AI"
   },
+  // Cloudflare Email Sending (beta) — transactional email (password reset,
+  // verification, welcome). inmotu.pro is onboarded with DNS configured.
+  "send_email": [
+    { "name": "EMAIL", "remote": true }
+  ],
   "vars": {
     "APP_ENV": "production",
     "APP_URL": "https://inmotu.pro",

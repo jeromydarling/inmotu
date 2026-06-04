@@ -76,6 +76,8 @@ export default function Dashboard() {
         </div>
       </header>
 
+      <VerifyEmailBanner />
+
       <OnboardingChecklist firstName={user?.full_name.split(" ")[0]} />
 
       <div className="mb-8 flex gap-1 overflow-x-auto rounded-xl border border-white/[0.06] bg-carbon-900/50 p-1">
@@ -113,6 +115,50 @@ export default function Dashboard() {
           {tab === "tower" && <TowerPanel />}
         </>
       )}
+    </div>
+  );
+}
+
+// Soft nudge (never blocks) for free users who haven't confirmed their email.
+function VerifyEmailBanner() {
+  const { user } = useAuth();
+  const toast = useToast();
+  const [dismissed, setDismissed] = useState(() => sessionStorage.getItem("hideVerifyBanner") === "1");
+  const [busy, setBusy] = useState(false);
+
+  if (!user || user.plan !== "free" || user.email_verified || dismissed) return null;
+
+  async function resend() {
+    setBusy(true);
+    try {
+      await api.resendVerification();
+      toast.success("Confirmation email sent — check your inbox.");
+    } catch (e: any) {
+      toast.error(e.message || "Couldn't send right now. Try again shortly.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function dismiss() {
+    sessionStorage.setItem("hideVerifyBanner", "1");
+    setDismissed(true);
+  }
+
+  return (
+    <div className="mb-8 flex flex-wrap items-center gap-3 rounded-xl border border-ignition/30 bg-ignition/[0.07] px-4 py-3">
+      <span className="text-sm text-white/75">
+        <span className="font-semibold text-white">Confirm your email</span> to unlock deadline reminders for the
+        races you save.
+      </span>
+      <div className="ml-auto flex items-center gap-2">
+        <button onClick={resend} disabled={busy} className="btn-ghost btn-sm">
+          {busy ? "Sending…" : "Resend email"}
+        </button>
+        <button onClick={dismiss} className="text-sm text-white/40 hover:text-white/70" aria-label="Dismiss">
+          ✕
+        </button>
+      </div>
     </div>
   );
 }

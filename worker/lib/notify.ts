@@ -1,6 +1,7 @@
 import type { Env } from "../types";
 import { now, uid } from "./util";
 import { sendPush, type PushSub } from "./webpush";
+import { sendNotification } from "./email";
 
 export interface NotifyInput {
   userId: string;
@@ -45,8 +46,8 @@ async function dispatchChannels(env: Env, n: NotifyInput): Promise<void> {
   if (prefs.notify_push) {
     jobs.push(pushAll(env, n));
   }
-  if (prefs.notify_email && env.RESEND_API_KEY) {
-    jobs.push(sendEmail(env, prefs.email, n));
+  if (prefs.notify_email) {
+    jobs.push(sendNotification(env, prefs.email, n.title, n.body, n.href));
   }
   await Promise.allSettled(jobs);
 }
@@ -72,29 +73,6 @@ async function pushAll(env: Env, n: NotifyInput): Promise<void> {
   }
 }
 
-async function sendEmail(env: Env, to: string, n: NotifyInput): Promise<void> {
-  const from = env.EMAIL_FROM || "inmotu <noreply@inmotu.pro>";
-  const link = `${env.APP_URL}${n.href ?? "/app"}`;
-  await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${env.RESEND_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from,
-      to,
-      subject: n.title,
-      html: `<div style="font-family:system-ui,sans-serif"><h2>${escapeHtml(n.title)}</h2>${
-        n.body ? `<p>${escapeHtml(n.body)}</p>` : ""
-      }<p><a href="${link}" style="color:#E63A05;font-weight:600">Open inmotu →</a></p></div>`,
-    }),
-  });
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
 
 /**
  * Cron sweep: registration-deadline reminders for saved/registered events.

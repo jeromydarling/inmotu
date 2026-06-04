@@ -12,6 +12,7 @@ export interface PublicUser {
   plan: Plan;
   role: Role;
   sectors: SectorId[]; // chosen at onboarding; adapts vocabulary + features
+  email_verified: boolean; // confirmed-email state (nudge-not-block; free users only)
 }
 
 // ── Sectors ──────────────────────────────────────────────────────────────────

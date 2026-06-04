@@ -119,6 +119,16 @@ export const api = {
   register: (body: Record<string, unknown>) =>
     req<{ user: PublicUser }>("/auth/register", { method: "POST", body: JSON.stringify(body) }),
   logout: () => req<{ ok: true }>("/auth/logout", { method: "POST" }),
+  forgotPassword: (email: string) =>
+    req<{ ok: true }>("/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) }),
+  resetPassword: (token: string, password: string) =>
+    req<{ ok: true; user: PublicUser }>("/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify({ token, password }),
+    }),
+  verifyEmail: (token: string) =>
+    req<{ ok: true; user: PublicUser }>("/auth/verify", { method: "POST", body: JSON.stringify({ token }) }),
+  resendVerification: () => req<{ ok: true }>("/auth/resend-verification", { method: "POST" }),
 
   // grid
   events: (params: Record<string, string> = {}) =>

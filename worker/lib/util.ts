@@ -5,6 +5,20 @@ export const now = () => Math.floor(Date.now() / 1000);
 export const uid = (prefix = "") =>
   prefix + crypto.randomUUID().replace(/-/g, "");
 
+/** A URL-safe random token (for password reset / email verification links). */
+export function randomToken(bytes = 32): string {
+  const a = crypto.getRandomValues(new Uint8Array(bytes));
+  let s = "";
+  for (const b of a) s += b.toString(16).padStart(2, "0");
+  return s;
+}
+
+/** SHA-256 hex of a string (used to store tokens hashed, never raw). */
+export async function sha256Hex(s: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 const enc = new TextEncoder();
 
 /** PBKDF2-SHA256 password hashing (WebCrypto — runs on the edge).

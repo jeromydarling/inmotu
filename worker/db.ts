@@ -22,6 +22,7 @@ export function toPublicUser(row: Record<string, unknown>): PublicUser {
     plan: row.plan as PublicUser["plan"],
     role: row.role as PublicUser["role"],
     sectors,
+    email_verified: !!(row.email_verified as number),
   };
 }
 
@@ -30,7 +31,7 @@ export async function getUserById(
   id: string,
 ): Promise<PublicUser | null> {
   const row = await env.DB.prepare(
-    "SELECT id, email, full_name, home_region, zip, plan, role, sectors FROM users WHERE id = ?",
+    "SELECT id, email, full_name, home_region, zip, plan, role, sectors, email_verified FROM users WHERE id = ?",
   )
     .bind(id)
     .first<Record<string, unknown>>();
