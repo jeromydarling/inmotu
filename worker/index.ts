@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import * as Sentry from "@sentry/cloudflare";
 import type { Env, Vars } from "./types";
 import { sessionMiddleware } from "./auth/middleware";
 import auth from "./routes/auth";
@@ -199,7 +200,7 @@ app.get("/racers/:slug", async (c) => {
 // not_found_handling=single-page-application, unknown paths return index.html.
 app.all("*", (c) => c.env.ASSETS.fetch(c.req.raw));
 
-export default {
+const handler = {
   fetch: app.fetch,
   // Cron Trigger (daily): pull event feeds into The Grid, and reap demo
   // accounts older than 7 days (children cascade via FKs).
@@ -240,3 +241,22 @@ export default {
     );
   },
 };
+
+// Wrap the whole handler (fetch + scheduled) so cron failures are captured,
+// not just request errors. Federation-standard tags keep events comparable
+// across the fleet; no-ops gracefully when SENTRY_DSN is unset.
+export default Sentry.withSentry(
+  (env: Env) => ({
+    dsn: env.SENTRY_DSN,
+    tracesSampleRate: 0.1,
+    sendDefaultPii: false,
+    initialScope: {
+      tags: {
+        app_slug: "inmotu",
+        federation_phase: "pre-launch",
+        tier: "worker",
+      },
+    },
+  }),
+  handler,
+) satisfies ExportedHandler<Env>;

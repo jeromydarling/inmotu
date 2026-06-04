@@ -17,6 +17,7 @@ export interface Env {
   VAPID_PUBLIC_KEY?: string; // web-push public key (safe to expose to client)
   EMAIL_FROM?: string; // from address for email notifications
   // Secrets (set via `wrangler secret put`):
+  SENTRY_DSN?: string; // server-side Sentry DSN (worker errors + cron failures)
   SESSION_SECRET?: string;
   STRIPE_SECRET_KEY?: string;
   STRIPE_WEBHOOK_SECRET?: string;

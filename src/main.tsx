@@ -4,8 +4,11 @@ import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./state/auth";
 import { ToastProvider } from "./state/toast";
 import { ConfigProvider } from "./state/config";
+import { initSentry } from "./lib/sentry";
 import App from "./App";
 import "./index.css";
+
+initSentry();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
