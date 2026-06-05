@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import type { Track } from "@shared/types";
 import { Badge, Spinner } from "../components/ui";
 import { ShareButton } from "../components/ShareButton";
 import { fmtDate, titleCase } from "../lib/format";
+import { useTranslate } from "../state/translation";
 
 export default function TrackDetail() {
   const { slug } = useParams();
@@ -19,6 +20,19 @@ export default function TrackDetail() {
       .catch(() => setData(null))
       .finally(() => setLoading(false));
   }, [slug]);
+
+  // Translate threat descriptions (called before the early returns below so the
+  // hook order stays stable; empty until the track loads).
+  const threatTexts = useMemo(
+    () => (data?.threats ?? []).map((th: any) => th.description ?? ""),
+    [data],
+  );
+  const threatTr = useTranslate(threatTexts);
+  const tr = useMemo(() => {
+    const m = new Map<string, string>();
+    threatTexts.forEach((t, i) => m.set(t, threatTr[i]));
+    return (s: string) => m.get(s) ?? s;
+  }, [threatTexts, threatTr]);
 
   if (loading)
     return (
@@ -60,7 +74,7 @@ export default function TrackDetail() {
           {threats.map((th) => (
             <div key={th.id} className="mt-2">
               <Badge tone="red">{titleCase(th.threat_type)}</Badge>
-              <p className="mt-2 text-sm text-white/65">{th.description}</p>
+              <p className="mt-2 text-sm text-white/65">{tr(th.description)}</p>
             </div>
           ))}
           <Link to="/frontline" className="btn-primary mt-4">

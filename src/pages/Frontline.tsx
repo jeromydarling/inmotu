@@ -34,10 +34,14 @@ export default function Frontline() {
   const [finderUrl, setFinderUrl] = useState<string | null>(null);
   const [repBusy, setRepBusy] = useState(false);
 
-  // Batch-translate bill titles + summaries (the prose racers actually read).
+  // Batch-translate the prose racers actually read: bill titles + summaries,
+  // and endangered-track descriptions. One call, cached server-side.
   const billTexts = useMemo(
-    () => bills.flatMap((b) => [b.title ?? "", b.summary ?? ""]),
-    [bills],
+    () => [
+      ...bills.flatMap((b) => [b.title ?? "", b.summary ?? ""]),
+      ...endangered.map((t) => t.description ?? ""),
+    ],
+    [bills, endangered],
   );
   const billTr = useTranslate(billTexts);
   const tr = useMemo(() => {
@@ -348,7 +352,7 @@ export default function Frontline() {
                       {t.city}, {t.state}
                     </p>
                     {t.description && (
-                      <p className="mt-2 text-sm text-white/55">{t.description}</p>
+                      <p className="mt-2 text-sm text-white/55">{tr(t.description)}</p>
                     )}
                   </div>
                 ))}

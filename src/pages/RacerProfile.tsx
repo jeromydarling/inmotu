@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import { Badge, Spinner } from "../components/ui";
 import { ShareButton } from "../components/ShareButton";
 import { fmtDate, titleCase } from "../lib/format";
+import { useTranslate } from "../state/translation";
 
 // Public racer profile — the opt-in racing identity: stats, results, photos.
 // No private data (no email/birthdate/address). Mirrors the track/team detail
@@ -17,6 +18,10 @@ export default function RacerProfile() {
     if (!slug) return;
     api.racer(slug).then(setData).catch(() => setData(null)).finally(() => setLoading(false));
   }, [slug]);
+
+  // Translate the racer's bio for Spanish readers (hook before early returns).
+  const bio = data?.racer?.bio ?? "";
+  const [trBio] = useTranslate(useMemo(() => [bio], [bio]));
 
   if (loading) return <div className="flex h-[50vh] items-center justify-center"><Spinner className="h-8 w-8" /></div>;
   if (!data)
@@ -59,7 +64,7 @@ export default function RacerProfile() {
         </div>
       </div>
 
-      {racer.bio && <p className="mt-6 max-w-2xl text-white/70">{racer.bio}</p>}
+      {racer.bio && <p className="mt-6 max-w-2xl text-white/70">{trBio}</p>}
 
       {/* Results */}
       <section className="mt-8">

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { SECTORS, type SectorId } from "@shared/types";
@@ -8,6 +8,7 @@ import { Spinner } from "../components/ui";
 import { fmtDate } from "../lib/format";
 import { useAuth } from "../state/auth";
 import { useToast } from "../state/toast";
+import { useTranslate } from "../state/translation";
 
 // "Start Here" — the on-ramp that turns a curious family into a racing family.
 // Pick the sport you're curious about + your state → how to start, beginner
@@ -86,6 +87,19 @@ function SectorStart({ sector, onBack }: { sector: SectorId; onBack: () => void 
   const [data, setData] = useState<Awaited<ReturnType<typeof api.startSector>> | null>(null);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  // Translate AI-found local-crew prose (blurb + meeting times) for newcomers
+  // reading in Spanish — exactly the "find your people" content that matters.
+  const crewTexts = useMemo(
+    () => (data?.crews ?? []).flatMap((cr: any) => [cr.blurb ?? "", cr.meets ?? ""]),
+    [data],
+  );
+  const crewTr = useTranslate(crewTexts);
+  const tr = useMemo(() => {
+    const m = new Map<string, string>();
+    crewTexts.forEach((t, i) => m.set(t, crewTr[i]));
+    return (s: string) => m.get(s) ?? s;
+  }, [crewTexts, crewTr]);
 
   function load(st: string) {
     setLoading(true);
@@ -259,8 +273,8 @@ function SectorStart({ sector, onBack }: { sector: SectorId; onBack: () => void 
                           <span className="shrink-0 rounded-full bg-amber/15 px-1.5 py-0.5 text-[10px] font-semibold text-amber" title="AI-found — confirm via the source link before relying on contact details">unverified</span>
                         )}
                       </div>
-                      {cr.blurb && <p className="mt-1.5 text-xs text-white/60">{cr.blurb}</p>}
-                      {cr.meets && <p className="mt-1 text-[11px] text-white/40">{cr.meets}</p>}
+                      {cr.blurb && <p className="mt-1.5 text-xs text-white/60">{tr(cr.blurb)}</p>}
+                      {cr.meets && <p className="mt-1 text-[11px] text-white/40">{tr(cr.meets)}</p>}
                       <div className="mt-2 flex flex-wrap gap-2 text-xs">
                         {cr.website && <a href={cr.website} target="_blank" rel="noreferrer" className="text-ignition-300 hover:underline">Website ↗</a>}
                         {cr.facebook && <a href={cr.facebook} target="_blank" rel="noreferrer" className="text-ignition-300 hover:underline">Facebook ↗</a>}

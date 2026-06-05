@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import { Spinner, Badge } from "../components/ui";
 import { AiImage } from "../components/motion";
 import { ShareButton } from "../components/ShareButton";
 import { fmtDateShort, titleCase } from "../lib/format";
+import { useTranslate } from "../state/translation";
 
 type Data = Awaited<ReturnType<typeof api.publicTeamPage>>;
 
@@ -25,6 +26,15 @@ export default function TeamPage() {
     if (!slug) return;
     api.publicTeamPage(slug).then(setD).catch(() => setD(null)).finally(() => setLoading(false));
   }, [slug]);
+
+  // Translate the team's own prose (tagline + bio) for Spanish readers.
+  const texts = useMemo(() => [d?.page?.tagline ?? "", d?.page?.bio ?? ""], [d]);
+  const trvals = useTranslate(texts);
+  const tr = useMemo(() => {
+    const m = new Map<string, string>();
+    texts.forEach((t, i) => m.set(t, trvals[i]));
+    return (s: string) => m.get(s) ?? s;
+  }, [texts, trvals]);
 
   if (loading) return <div className="flex h-[60vh] items-center justify-center"><Spinner className="h-8 w-8" /></div>;
   if (!d) return (
@@ -49,7 +59,7 @@ export default function TeamPage() {
         <div className="container-page py-24 sm:py-32">
           {page.discipline && <Badge tone="amber">{titleCase(page.discipline)}</Badge>}
           <h1 className="mt-4 font-display text-5xl font-black tracking-tightest drop-shadow-lg sm:text-6xl">{page.name}</h1>
-          {page.tagline && <p className="mt-3 max-w-xl text-lg font-semibold" style={{ color: accent }}>{page.tagline}</p>}
+          {page.tagline && <p className="mt-3 max-w-xl text-lg font-semibold" style={{ color: accent }}>{tr(page.tagline)}</p>}
           {page.hometown && <p className="mt-2 text-sm text-white/50">📍 {page.hometown}</p>}
           <div className="mt-6 flex flex-wrap items-center gap-4">
             <ShareButton title={page.name} text={page.tagline || `Follow ${page.name} on inmotu`} />
@@ -74,7 +84,7 @@ export default function TeamPage() {
           {page.bio && (
             <section>
               <h2 className="mb-2 font-display text-xl font-bold">About</h2>
-              <p className="whitespace-pre-wrap text-white/65">{page.bio}</p>
+              <p className="whitespace-pre-wrap text-white/65">{tr(page.bio)}</p>
             </section>
           )}
 
