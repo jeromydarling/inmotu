@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./state/auth";
 import { ToastProvider } from "./state/toast";
 import { ConfigProvider } from "./state/config";
+import { TranslationProvider } from "./state/translation";
 import { initSentry } from "./lib/sentry";
 import App from "./App";
 import "./index.css";
@@ -16,7 +17,9 @@ createRoot(document.getElementById("root")!).render(
       <ToastProvider>
         <ConfigProvider>
           <AuthProvider>
-            <App />
+            <TranslationProvider>
+              <App />
+            </TranslationProvider>
           </AuthProvider>
         </ConfigProvider>
       </ToastProvider>

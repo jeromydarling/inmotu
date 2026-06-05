@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { Logo, Mark } from "./Logo";
 import { useAuth } from "../state/auth";
 import { NotificationBell } from "./NotificationBell";
+import { LangToggle } from "./Translate";
 
 const navItems = [
   { to: "/start", label: "Start Here" },
@@ -187,7 +188,10 @@ export function Footer() {
       <div className="border-t border-white/[0.06]">
         <div className="container-page flex flex-col items-center justify-between gap-2 py-5 text-xs text-white/35 sm:flex-row">
           <span>© {new Date().getFullYear()} inmotu. Nobody races alone.</span>
-          <span className="font-mono">inmotu.pro · built on Cloudflare's edge</span>
+          <div className="flex items-center gap-3">
+            <LangToggle />
+            <span className="font-mono">inmotu.pro · built on Cloudflare's edge</span>
+          </div>
         </div>
       </div>
     </footer>

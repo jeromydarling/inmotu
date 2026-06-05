@@ -31,6 +31,7 @@ import venues from "./routes/venues";
 import start from "./routes/start";
 import racers from "./routes/racers";
 import analytics from "./routes/analytics";
+import translate from "./routes/translate";
 import { ingestFromFeeds } from "./ingest";
 import { runDeadlineSweep } from "./lib/notify";
 import { refreshLegislation } from "./lib/perplexity";
@@ -76,6 +77,7 @@ api.route("/venues", venues);
 api.route("/start", start);
 api.route("/racers", racers);
 api.route("/analytics", analytics);
+api.route("/translate", translate);
 
 api.notFound((c) => c.json({ error: "Not found" }, 404));
 api.onError((err, c) => {

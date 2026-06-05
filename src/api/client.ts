@@ -130,6 +130,13 @@ export const api = {
     req<{ ok: true; user: PublicUser }>("/auth/verify", { method: "POST", body: JSON.stringify({ token }) }),
   resendVerification: () => req<{ ok: true }>("/auth/resend-verification", { method: "POST" }),
 
+  // translation (Workers AI) — batch translate dynamic content strings.
+  translate: (texts: string[], target = "es") =>
+    req<{ translations: string[] }>("/translate", {
+      method: "POST",
+      body: JSON.stringify({ texts, target }),
+    }),
+
   // grid
   events: (params: Record<string, string> = {}) =>
     req<{ events: EventItem[] }>(`/events?${new URLSearchParams(params)}`),

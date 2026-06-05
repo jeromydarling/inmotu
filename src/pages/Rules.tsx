@@ -3,6 +3,7 @@ import { api } from "../api/client";
 import { Badge, EmptyState, Spinner, Pill } from "../components/ui";
 import { Reveal } from "../components/motion";
 import { titleCase } from "../lib/format";
+import { useTranslate } from "../state/translation";
 
 const catTone: Record<string, any> = {
   classes: "live",
@@ -27,6 +28,15 @@ export default function Rules() {
     }, q ? 200 : 0);
     return () => clearTimeout(t);
   }, [cat, q]);
+
+  // Batch-translate every rule's title + summary in one call (cached server-side).
+  const texts = useMemo(() => rules.flatMap((r) => [r.title ?? "", r.summary ?? ""]), [rules]);
+  const translated = useTranslate(texts);
+  const tr = useMemo(() => {
+    const m = new Map<string, string>();
+    texts.forEach((t, i) => m.set(t, translated[i]));
+    return (s: string) => m.get(s) ?? s;
+  }, [texts, translated]);
 
   const cats = ["classes", "advancement", "safety", "conduct"];
   const grouped = useMemo(() => {
@@ -71,8 +81,8 @@ export default function Rules() {
                         <Badge tone={catTone[r.category] ?? "muted"}>{r.category}</Badge>
                         {r.discipline && <Badge tone="muted">{titleCase(r.discipline)}</Badge>}
                       </div>
-                      <h3 className="font-display text-lg font-bold text-white">{r.title}</h3>
-                      <p className="mt-2 text-sm text-white/55">{r.summary}</p>
+                      <h3 className="font-display text-lg font-bold text-white">{tr(r.title)}</h3>
+                      <p className="mt-2 text-sm text-white/55">{tr(r.summary)}</p>
                       {r.url && (
                         <a href={r.url} target="_blank" rel="noreferrer" className="mt-3 inline-block text-sm font-semibold text-ignition">
                           Official source ↗

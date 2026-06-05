@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import type { Legislation } from "@shared/types";
@@ -7,6 +7,7 @@ import { MapView, type MapPoint } from "../components/MapView";
 import { STATE_CENTROIDS } from "../lib/states";
 import { useAuth } from "../state/auth";
 import { useToast } from "../state/toast";
+import { useTranslate } from "../state/translation";
 
 const statusMeta: Record<string, { tone: any; label: string; pct: number }> = {
   enacted: { tone: "green", label: "Enacted", pct: 100 },
@@ -32,6 +33,18 @@ export default function Frontline() {
   const [repState, setRepState] = useState<string | null>(null);
   const [finderUrl, setFinderUrl] = useState<string | null>(null);
   const [repBusy, setRepBusy] = useState(false);
+
+  // Batch-translate bill titles + summaries (the prose racers actually read).
+  const billTexts = useMemo(
+    () => bills.flatMap((b) => [b.title ?? "", b.summary ?? ""]),
+    [bills],
+  );
+  const billTr = useTranslate(billTexts);
+  const tr = useMemo(() => {
+    const m = new Map<string, string>();
+    billTexts.forEach((t, i) => m.set(t, billTr[i]));
+    return (s: string) => m.get(s) ?? s;
+  }, [billTexts, billTr]);
 
   useEffect(() => {
     Promise.all([api.legislation(), api.endangered()])
@@ -239,7 +252,7 @@ export default function Frontline() {
                           </span>
                         )}
                       </div>
-                      <p className="mt-0.5 text-sm text-white/55">{b.title}</p>
+                      <p className="mt-0.5 text-sm text-white/55">{tr(b.title)}</p>
                     </div>
                     <Badge tone={m.tone}>{m.label}</Badge>
                   </div>
@@ -257,7 +270,7 @@ export default function Frontline() {
                     />
                   </div>
 
-                  {b.summary && <p className="mt-3 text-sm text-white/45">{b.summary}</p>}
+                  {b.summary && <p className="mt-3 text-sm text-white/45">{tr(b.summary)}</p>}
 
                   {Array.isArray((b as any).citations) && (b as any).citations.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-white/40">

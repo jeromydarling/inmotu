@@ -1,5 +1,6 @@
 import { Routes, Route, Outlet, Navigate, useLocation } from "react-router-dom";
 import { Header, Footer } from "./components/Layout";
+import { TranslateOffer } from "./components/Translate";
 import { useAuth } from "./state/auth";
 import { api } from "./api/client";
 import { Spinner } from "./components/ui";
@@ -40,6 +41,7 @@ function Shell() {
   return (
     <div className="flex min-h-full flex-col">
       <Header />
+      <TranslateOffer />
       <main key={pathname} className="flex-1 animate-fade-up">
         <Outlet />
       </main>
