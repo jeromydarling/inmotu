@@ -138,3 +138,5 @@ Built and tested end-to-end:
 
 Plus first-party auth (PBKDF2 + KV sessions) and Stripe billing (live
 subscription + yearbook products; set the secret key to switch on checkout).
+
+<!-- deploy-trigger: 2026-06-06T01:46:15Z (Sentry DSN bake-in) -->
