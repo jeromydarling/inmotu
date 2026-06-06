@@ -27,6 +27,7 @@ studio.post("/generate", async (c) => {
       details: typeof b.details === "string" ? b.details : undefined,
       tone: typeof b.tone === "string" ? b.tone : undefined,
       withHashtags: !!b.withHashtags,
+      lang: b.lang === "es" ? "es" : undefined,
     });
     if (!body) return err(c, "internal", "The studio came up empty — try again.");
     return c.json({ body });
@@ -60,7 +61,7 @@ studio.post("/assets", async (c) => {
 
 studio.get("/assets", async (c) => {
   const { results } = await c.env.DB.prepare(
-    "SELECT id, kind, title, body, created_at FROM marketing_assets WHERE user_id = ? ORDER BY created_at DESC LIMIT 100",
+    "SELECT id, kind, title, body, context, created_at FROM marketing_assets WHERE user_id = ? ORDER BY created_at DESC LIMIT 100",
   )
     .bind(c.var.user!.id)
     .all();

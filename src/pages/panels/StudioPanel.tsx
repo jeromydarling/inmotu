@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../../api/client";
 import { Badge, EmptyState, Spinner } from "../../components/ui";
 import { useToast } from "../../state/toast";
+import { useTranslation } from "../../state/translation";
 
 const KINDS = [
   { id: "social", label: "Social posts", hint: "3 shareable posts" },
@@ -11,12 +12,25 @@ const KINDS = [
   { id: "press", label: "Press blurb", hint: "For local press" },
 ] as const;
 
+// Saved assets carry their draft language in the JSON `context` column.
+function assetLang(a: any): string | undefined {
+  try {
+    return typeof a.context === "string" ? JSON.parse(a.context)?.lang : a.context?.lang;
+  } catch {
+    return undefined;
+  }
+}
+
 export default function StudioPanel() {
   const toast = useToast();
+  const { enabled: siteSpanish } = useTranslation();
   const [kind, setKind] = useState<string>("social");
   const [subject, setSubject] = useState("");
   const [details, setDetails] = useState("");
   const [hashtags, setHashtags] = useState(false);
+  // Default the draft language to the reader's site preference — a promoter
+  // running inmotu in Spanish gets Spanish copy out of the box.
+  const [lang, setLang] = useState<"en" | "es">(siteSpanish ? "es" : "en");
   const [busy, setBusy] = useState(false);
   const [output, setOutput] = useState("");
   const [assets, setAssets] = useState<any[]>([]);
@@ -34,7 +48,7 @@ export default function StudioPanel() {
     setBusy(true);
     setOutput("");
     try {
-      const r = await api.studioGenerate({ kind, subject, details, withHashtags: hashtags });
+      const r = await api.studioGenerate({ kind, subject, details, withHashtags: hashtags, lang });
       setOutput(r.body);
     } catch (e: any) {
       toast.error(e?.message || "Generation failed. Try again.");
@@ -45,7 +59,7 @@ export default function StudioPanel() {
 
   async function save() {
     if (!output.trim()) return;
-    await api.studioSave({ kind, title: subject.slice(0, 80), body: output });
+    await api.studioSave({ kind, title: subject.slice(0, 80), body: output, context: { lang } });
     toast.success("Saved to your library.");
     loadAssets();
   }
@@ -106,10 +120,28 @@ export default function StudioPanel() {
             value={details}
             onChange={(e) => setDetails(e.target.value)}
           />
-          <label className="mt-3 flex items-center gap-2 text-sm text-white/60">
-            <input type="checkbox" checked={hashtags} onChange={(e) => setHashtags(e.target.checked)} />
-            Include hashtags
-          </label>
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <label className="flex items-center gap-2 text-sm text-white/60">
+              <input type="checkbox" checked={hashtags} onChange={(e) => setHashtags(e.target.checked)} />
+              Include hashtags
+            </label>
+            <div className="inline-flex overflow-hidden rounded-full border border-white/10 text-[11px] font-semibold">
+              <button
+                type="button"
+                onClick={() => setLang("en")}
+                className={`px-2.5 py-1 transition ${lang === "en" ? "bg-white/10 text-white" : "text-white/45 hover:text-white/70"}`}
+              >
+                English
+              </button>
+              <button
+                type="button"
+                onClick={() => setLang("es")}
+                className={`px-2.5 py-1 transition ${lang === "es" ? "bg-ignition text-white" : "text-white/45 hover:text-white/70"}`}
+              >
+                Español
+              </button>
+            </div>
+          </div>
           <button className="btn-primary mt-4 w-full" onClick={generate} disabled={busy}>
             {busy ? "Writing…" : "✨ Generate"}
           </button>
@@ -154,7 +186,10 @@ export default function StudioPanel() {
             {assets.map((a) => (
               <div key={a.id} className="panel p-4">
                 <div className="mb-1 flex items-center justify-between">
-                  <Badge tone="muted">{a.kind.replace("_", " ")}</Badge>
+                  <div className="flex items-center gap-1.5">
+                    <Badge tone="muted">{a.kind.replace("_", " ")}</Badge>
+                    {assetLang(a) === "es" && <Badge tone="amber">ES</Badge>}
+                  </div>
                   <div className="flex gap-2">
                     <button className="text-xs text-white/40 hover:text-white" onClick={() => copy(a.body)}>Copy</button>
                     <button className="text-xs text-white/30 hover:text-flag-red" onClick={() => remove(a.id)}>✕</button>

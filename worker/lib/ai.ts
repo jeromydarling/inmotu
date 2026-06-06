@@ -33,6 +33,7 @@ interface AssetReq {
   details?: string; // results, dates, location, sponsor name, etc.
   tone?: string; // optional override
   withHashtags?: boolean;
+  lang?: string; // "es" to write the copy in Spanish; default English
 }
 
 const KIND_INSTRUCTIONS: Record<AssetKind, string> = {
@@ -54,6 +55,9 @@ export async function generateAsset(env: Env, req: AssetReq): Promise<string> {
     `Subject: ${req.subject}`,
     req.details ? `Details to use (only what's relevant): ${req.details}` : "",
     req.tone ? `Tone: ${req.tone}` : "",
+    req.lang === "es"
+      ? "Write the entire output in natural, neutral Latin American Spanish (not a literal translation — write it as a native speaker would)."
+      : "",
     req.withHashtags ? "Include 2-4 relevant hashtags." : "Do not include hashtags.",
     "Output only the copy itself — no preamble, no explanation, no quotes around it.",
   ].filter(Boolean);
