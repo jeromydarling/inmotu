@@ -115,12 +115,20 @@ test("5 · a plan-gated tab shows the upgrade prompt (free account)", async () =
 });
 
 test("6 · save an event to the calendar → persists + shows on dashboard", async () => {
+  // The public Grid intentionally hides fabricated seed events, and this
+  // environment currently has only seed/demo events — so the Grid is honestly
+  // empty. Fetch a slug directly (including demo) to exercise the save flow on
+  // a real event-detail page; this works identically once real events exist.
   await page.goto("/grid");
-  const firstEvent = page.locator('a[href^="/events/"]').first();
-  await expect(firstEvent).toBeVisible();
-  await firstEvent.click();
-  await expect(page).toHaveURL(/\/events\//);
+  await expect(page.getByRole("heading", { level: 1, name: /every race in america/i })).toBeVisible();
 
+  const res = await page.request.get("/api/events?include_demo=1&include_unverified=1");
+  const { events } = await res.json();
+  expect(Array.isArray(events) && events.length > 0).toBeTruthy();
+  const slug = events[0].slug;
+
+  await page.goto(`/events/${slug}`);
+  await expect(page).toHaveURL(/\/events\//);
   const title = (await page.getByRole("heading", { level: 1 }).textContent())?.trim() || "";
   expect(title.length).toBeGreaterThan(0);
 
