@@ -85,19 +85,27 @@ export async function translateBatch(
         // elsewhere for small calls; never overshoots the model's cap).
         max_tokens: Math.min(4000, 400 + misses.length * 300),
         temperature: 0.2,
-      })) as { response?: string };
-      const raw = (res.response ?? "").trim();
-      let arr = extractArray(raw);
-      // Lenient salvage: a single-item request often comes back as a bare
-      // sentence rather than a JSON array — use it directly.
-      if ((!arr || arr.length !== misses.length) && misses.length === 1 && raw) {
-        const cleaned = raw
-          .replace(/^```(?:json)?/i, "")
-          .replace(/```$/, "")
-          .trim()
-          .replace(/^"|"$/g, "")
-          .trim();
-        if (cleaned) arr = [cleaned];
+      })) as { response?: unknown };
+      // Workers AI returns `response` already parsed to an array when the model
+      // emits a JSON array; otherwise it's a string we parse ourselves.
+      const r = res.response;
+      let arr: string[] | null = null;
+      if (Array.isArray(r)) {
+        arr = r.map((x) => String(x));
+      } else {
+        const raw = (typeof r === "string" ? r : "").trim();
+        arr = extractArray(raw);
+        // Lenient salvage: a single-item request sometimes comes back as a bare
+        // sentence rather than a JSON array — use it directly.
+        if ((!arr || arr.length !== misses.length) && misses.length === 1 && raw) {
+          const cleaned = raw
+            .replace(/^```(?:json)?/i, "")
+            .replace(/```$/, "")
+            .trim()
+            .replace(/^"|"$/g, "")
+            .trim();
+          if (cleaned) arr = [cleaned];
+        }
       }
       const ts = now();
       if (arr && arr.length === misses.length) {
