@@ -81,10 +81,24 @@ export async function translateBatch(
           { role: "system", content: sys },
           { role: "user", content: JSON.stringify(misses.map((m) => m.text)) },
         ],
-        max_tokens: 4000,
+        // Scale headroom with the batch (matches the known-good ~800 used
+        // elsewhere for small calls; never overshoots the model's cap).
+        max_tokens: Math.min(4000, 400 + misses.length * 300),
         temperature: 0.2,
       })) as { response?: string };
-      const arr = extractArray(res.response ?? "");
+      const raw = (res.response ?? "").trim();
+      let arr = extractArray(raw);
+      // Lenient salvage: a single-item request often comes back as a bare
+      // sentence rather than a JSON array — use it directly.
+      if ((!arr || arr.length !== misses.length) && misses.length === 1 && raw) {
+        const cleaned = raw
+          .replace(/^```(?:json)?/i, "")
+          .replace(/```$/, "")
+          .trim()
+          .replace(/^"|"$/g, "")
+          .trim();
+        if (cleaned) arr = [cleaned];
+      }
       const ts = now();
       if (arr && arr.length === misses.length) {
         await Promise.all(
