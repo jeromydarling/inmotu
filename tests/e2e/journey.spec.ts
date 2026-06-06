@@ -205,6 +205,11 @@ test("10 · session survives a cold reload, then sign out", async () => {
   if (await menu.isVisible().catch(() => false)) await menu.click();
   await page.getByRole("button", { name: /sign out/i }).click();
 
+  // Sign-out is async (clear session, then navigate home). Wait for that
+  // navigation to land before probing — otherwise the cookie may not be
+  // cleared yet. Leaving /app confirms logout completed.
+  await expect(page).not.toHaveURL(/\/app/);
+
   // Logged-out proof that holds on both layouts: the protected app now
   // redirects to the login page.
   await page.goto("/app");
