@@ -64,6 +64,14 @@ jobs:
           echo "::error::Timed out waiting for a new deployment at $BASE_URL (still $PREV_VERSION)"
           exit 1
 
+      # TEMP diagnostic: print the raw Workers AI translate probe (remove later).
+      - name: Probe translation model
+        run: |
+          echo "--- /api/translate?debug probe ---"
+          curl -s -X POST "$BASE_URL/api/translate?debug=$E2E_PURGE_TOKEN" \
+            -H 'content-type: application/json' -d '{}' | head -c 3000
+          echo
+
       - name: Run E2E (desktop + mobile)
         run: npx playwright test --project=desktop --project=mobile
 

@@ -12,6 +12,24 @@ const MAX_ITEMS = 100;
 const MAX_CHARS = 8000; // total across the batch; keeps a single call bounded
 
 translate.post("/", async (c) => {
+  // TEMP diagnostic: token-guarded raw model probe to surface why translation
+  // falls back to English in prod. Remove once the root cause is fixed.
+  if (c.req.query("debug") && c.req.query("debug") === c.env.E2E_PURGE_TOKEN) {
+    try {
+      const res = await c.env.AI.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
+        messages: [
+          { role: "system", content: "You are a translator. Reply with ONLY a JSON array." },
+          { role: "user", content: JSON.stringify(["Know the rules. Race with confidence."]) },
+        ],
+        max_tokens: 400,
+      });
+      return c.json({ ok: true, res });
+    } catch (e: unknown) {
+      const err = e as { message?: string; stack?: string; name?: string };
+      return c.json({ ok: false, name: err?.name, error: String(err?.message ?? e), stack: err?.stack });
+    }
+  }
+
   const b = await c.req.json().catch(() => ({}));
   const target = typeof b?.target === "string" ? b.target : "es";
   const texts: unknown = b?.texts;
