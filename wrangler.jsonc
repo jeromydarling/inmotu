@@ -65,6 +65,14 @@
     // the Cloudflare dashboard (Worker → Settings → Variables), not here.
     // Secrets survive deploys; keeping it out of config avoids the empty-string
     // var that previously shadowed the real token and broke the map.
-    "INGEST_FEEDS": ""
+    "INGEST_FEEDS": "",
+    // EMAIL_VERIFICATION omitted → OFF: new users start verified, no email-link
+    // dependency. Set to "on" to require the confirm step. That one var is the
+    // only change needed to re-enable verification.
+    //
+    // E2E_PURGE_TOKEN guards POST /api/admin/purge-user. Safe to commit: that
+    // endpoint only ever deletes disposable e2e+ test accounts, never real
+    // users. CI uses this same value (overridable via an E2E_PURGE_TOKEN secret).
+    "E2E_PURGE_TOKEN": "e2e-purge-inmotu-2026-7Kq2mZ"
   }
 }

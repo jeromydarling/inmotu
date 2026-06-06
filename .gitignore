@@ -8,3 +8,8 @@ dist/
 worker-configuration.d.ts
 .env
 *.tsbuildinfo
+
+# Playwright E2E
+playwright-report/
+test-results/
+/playwright/.cache/

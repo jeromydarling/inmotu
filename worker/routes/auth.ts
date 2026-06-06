@@ -53,12 +53,17 @@ auth.post("/register", async (c) => {
   const hash = await hashPassword(password);
   const name = full_name.trim();
   const emailLc = email.toLowerCase();
+  // Email verification is OFF by default: new users start already-verified and
+  // can use the whole app immediately (no email-link dependency). Set the env
+  // var EMAIL_VERIFICATION="on" to re-enable the confirm step — that one var is
+  // the only change required.
+  const verificationOn = c.env.EMAIL_VERIFICATION === "on";
   try {
     await c.env.DB.prepare(
-      `INSERT INTO users (id, email, password_hash, full_name, home_region, zip, plan, role, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, 'free', 'member', ?, ?)`,
+      `INSERT INTO users (id, email, password_hash, full_name, home_region, zip, plan, role, email_verified, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, 'free', 'member', ?, ?, ?)`,
     )
-      .bind(id, emailLc, hash, name, home_region ?? null, zip ?? null, ts, ts)
+      .bind(id, emailLc, hash, name, home_region ?? null, zip ?? null, verificationOn ? 0 : 1, ts, ts)
       .run();
   } catch {
     // UNIQUE(email) violation under a race → same 409 as the pre-check.
@@ -68,15 +73,16 @@ auth.post("/register", async (c) => {
   const sid = await createSession(c.env, id);
   c.header("Set-Cookie", sessionCookie(sid, secure(c)));
 
-  // Fire transactional emails without blocking the signup response. New users
-  // start free, so they all get a verification nudge (paid users would skip,
-  // but nobody registers paid). Welcome + verify go out best-effort.
+  // Fire transactional emails without blocking the signup response. Welcome
+  // always goes out; the verification email only when verification is enabled.
   c.executionCtx.waitUntil(
     (async () => {
       try {
         await sendWelcome(c.env, emailLc, name);
-        const token = await mintToken(c.env, id, "verify", 48 * 3600);
-        await sendVerifyEmail(c.env, emailLc, token);
+        if (verificationOn) {
+          const token = await mintToken(c.env, id, "verify", 48 * 3600);
+          await sendVerifyEmail(c.env, emailLc, token);
+        }
       } catch (e) {
         console.error("register: email send failed", e);
       }
@@ -92,7 +98,7 @@ auth.post("/register", async (c) => {
     plan: "free",
     role: "member",
     sectors: [],
-    email_verified: false,
+    email_verified: !verificationOn,
   };
   return c.json({ user }, 201);
 });

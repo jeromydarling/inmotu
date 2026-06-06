@@ -14,6 +14,8 @@ export interface Env {
   STRIPE_PRICE_YEARBOOK?: string;
   LULU_ENV?: string; // 'sandbox' | 'production'
   INGEST_FEEDS?: string; // comma-separated JSON feed URLs for event ingestion
+  EMAIL_VERIFICATION?: string; // "on" requires email confirm at signup; anything else → new users start verified (default OFF). One-var toggle.
+  E2E_PURGE_TOKEN?: string; // token guarding the e2e test-account purge endpoint
   VAPID_PUBLIC_KEY?: string; // web-push public key (safe to expose to client)
   EMAIL_FROM?: string; // from address for email notifications
   // Secrets (set via `wrangler secret put`):

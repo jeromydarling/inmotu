@@ -105,3 +105,19 @@
 .mapboxgl-ctrl-group button + button {
   border-top-color: rgba(255, 255, 255, 0.08) !important;
 }
+
+/* Honor the OS / test "reduce motion" setting: collapse all animations and
+   transitions to instant. Keeps animated elements from sitting in an unstable
+   mid-tween state — which is what makes Playwright .click() time out — while
+   still landing on each animation's final, visible frame. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+}

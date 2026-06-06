@@ -43,6 +43,7 @@ export default function Register() {
           <label className="label">Full name</label>
           <input
             className="field"
+            name="full_name"
             value={form.full_name}
             onChange={(e) => up("full_name", e.target.value)}
             required
@@ -53,6 +54,7 @@ export default function Register() {
           <input
             className="field"
             type="email"
+            name="email"
             autoComplete="email"
             value={form.email}
             onChange={(e) => up("email", e.target.value)}
@@ -65,6 +67,7 @@ export default function Register() {
             <input
               className="field"
               type="password"
+              name="password"
               autoComplete="new-password"
               minLength={8}
               value={form.password}
@@ -76,6 +79,7 @@ export default function Register() {
             <label className="label">ZIP</label>
             <input
               className="field"
+              name="zip"
               value={form.zip}
               onChange={(e) => up("zip", e.target.value)}
               placeholder="55044"

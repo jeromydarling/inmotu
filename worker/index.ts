@@ -32,6 +32,7 @@ import start from "./routes/start";
 import racers from "./routes/racers";
 import analytics from "./routes/analytics";
 import translate from "./routes/translate";
+import { purgeUserByEmail } from "./lib/purge";
 import { ingestFromFeeds } from "./ingest";
 import { runDeadlineSweep } from "./lib/notify";
 import { refreshLegislation } from "./lib/perplexity";
@@ -67,6 +68,20 @@ api.route("/series", series);
 api.route("/sponsors", sponsors);
 api.route("/rules", rules);
 api.route("/demo", demo);
+
+// E2E test-account cleanup. Token-guarded AND hard-restricted to disposable
+// e2e+ test emails, so a leaked token can never delete a real user. Registered
+// BEFORE the admin sub-app so its admin-session guard does not apply here.
+api.post("/admin/purge-user", async (c) => {
+  const token = c.req.query("token") ?? "";
+  const email = (c.req.query("email") ?? "").toLowerCase();
+  if (!c.env.E2E_PURGE_TOKEN || token !== c.env.E2E_PURGE_TOKEN)
+    return c.json({ error: "forbidden" }, 403);
+  if (!/^e2e\+/.test(email)) return c.json({ error: "refused: not a test account" }, 400);
+  const result = await purgeUserByEmail(c.env, email);
+  return c.json({ ok: true, purged: !!result, ...(result ?? {}) });
+});
+
 api.route("/admin", adminRoutes);
 api.route("/studio", studio);
 api.route("/teampages", teampages);

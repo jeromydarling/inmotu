@@ -12,7 +12,9 @@
     "cf-typegen": "wrangler types",
     "db:migrate:local": "wrangler d1 migrations apply inmotu-prod --local",
     "db:migrate:remote": "wrangler d1 migrations apply inmotu-prod --remote",
-    "typecheck": "tsc -b --noEmit"
+    "typecheck": "tsc -b --noEmit",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@sentry/cloudflare": "^10.56.0",
@@ -25,6 +27,7 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241218.0",
+    "@playwright/test": "^1.49.1",
     "@types/mapbox-gl": "^3.4.1",
     "@types/react": "^18.3.17",
     "@types/react-dom": "^18.3.5",
