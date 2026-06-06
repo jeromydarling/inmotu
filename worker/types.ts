@@ -6,6 +6,7 @@ export interface Env {
   ASSETS: Fetcher;
   MEDIA: R2Bucket;
   AI: Ai;
+  CF_VERSION_METADATA?: { id: string; tag?: string; timestamp?: string }; // running deployment version (for the E2E deploy gate)
   EMAIL?: { send: (msg: { from: string; to: string; subject: string; html?: string; text?: string }) => Promise<{ messageId?: string }> }; // Cloudflare Email Sending binding
   APP_ENV: string;
   APP_URL: string;

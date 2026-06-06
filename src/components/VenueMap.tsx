@@ -13,6 +13,7 @@ export const CATEGORY_META: Record<string, { label: string; color: string }> = {
   motocross: { label: "Motocross", color: "#22C55E" },   // green
   drag: { label: "Drag strip", color: "#3B82F6" },       // blue
   karting: { label: "Karting", color: "#A855F7" },       // purple
+  bmx: { label: "BMX", color: "#EC4899" },               // pink
   circuit: { label: "Circuit", color: "#94A3B8" },       // slate
 };
 

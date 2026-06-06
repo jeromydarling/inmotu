@@ -73,11 +73,12 @@ test("2 · sign up a brand-new user → lands signed-in in the app", async () =>
   await page.getByRole("button", { name: /create free account/i }).click();
 
   // Signed-in proof that holds on BOTH desktop and mobile: we reach the
-  // protected dashboard (its <h1> is layout-independent) and the public
-  // "Sign in" link is gone.
+  // protected dashboard, whose "Welcome back, <name>." <h1> only renders for an
+  // authenticated user and is identical across layouts. (We deliberately don't
+  // assert "Sign in" is absent — the footer always links to it regardless of
+  // auth state.)
   await expect(page).toHaveURL(/\/app/);
   await expect(page.getByRole("heading", { name: /welcome back/i })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Sign in", exact: true })).toHaveCount(0);
 });
 
 test("3 · create a rider → persists across reload", async () => {

@@ -48,7 +48,9 @@ const app = new Hono<{ Bindings: Env; Variables: Vars }>();
 const api = new Hono<{ Bindings: Env; Variables: Vars }>();
 api.use("*", sessionMiddleware);
 
-api.get("/health", (c) => c.json({ ok: true, env: c.env.APP_ENV }));
+api.get("/health", (c) =>
+  c.json({ ok: true, env: c.env.APP_ENV, version: c.env.CF_VERSION_METADATA?.id ?? null }),
+);
 api.route("/auth", auth);
 api.route("/events", events);
 api.route("/tracks", tracks);

@@ -26,6 +26,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Capture the version that's live RIGHT NOW (before our push finishes
+      # deploying), so the gate below can wait for it to actually change.
+      - name: Capture current deployment version
+        run: |
+          prev=$(curl -s "$BASE_URL/api/health" | jq -r '.version // "none"')
+          echo "PREV_VERSION=$prev" >> "$GITHUB_ENV"
+          echo "Currently live version: $prev"
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -38,23 +46,22 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       # Tests run against the deployed Worker. A push to main also triggers the
-      # Cloudflare deploy, so wait until the NEW code is live before testing —
-      # the purge route only exists in this build, so its presence is the signal.
-      - name: Wait for deployment to go live
+      # Cloudflare deploy, so wait until THIS push's build is live before
+      # testing — detected by the deployment version changing from the value
+      # captured at the start of the run.
+      - name: Wait for the new deployment to go live
         run: |
-          echo "Waiting for $BASE_URL to serve the new build…"
+          echo "Waiting for a version != '$PREV_VERSION' at $BASE_URL…"
           for i in $(seq 1 60); do
-            code=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
-              "$BASE_URL/api/admin/purge-user?token=probe&email=probe@example.com" || echo "000")
-            echo "attempt $i → HTTP $code"
-            # 404 = old build (route absent); 400/403 = new build is live.
-            if [ "$code" = "400" ] || [ "$code" = "403" ]; then
-              echo "New build is live."
+            cur=$(curl -s "$BASE_URL/api/health" | jq -r '.version // "none"')
+            echo "attempt $i → version $cur"
+            if [ -n "$cur" ] && [ "$cur" != "none" ] && [ "$cur" != "$PREV_VERSION" ]; then
+              echo "New build is live (version $cur)."
               exit 0
             fi
             sleep 10
           done
-          echo "::error::Timed out waiting for the new deployment at $BASE_URL"
+          echo "::error::Timed out waiting for a new deployment at $BASE_URL (still $PREV_VERSION)"
           exit 1
 
       - name: Run E2E (desktop + mobile)
