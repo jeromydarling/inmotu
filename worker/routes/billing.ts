@@ -99,6 +99,30 @@ export async function handleStripeEvent(
     return;
   }
 
+  // Canceled subscription → downgrade to the free tier. Resolve the user from
+  // metadata.user_id when present, else via users.stripe_customer_id (set at
+  // checkout). If neither matches a user, log and return — never throw, or
+  // Stripe retries an event we can do nothing with.
+  if (type === "customer.subscription.deleted") {
+    let userId: string | null = meta.user_id ?? null;
+    if (!userId && typeof obj.customer === "string") {
+      userId = await env.DB.prepare("SELECT id FROM users WHERE stripe_customer_id = ?")
+        .bind(obj.customer)
+        .first<{ id: string }>()
+        .then((r) => r?.id ?? null);
+    }
+    if (!userId) {
+      console.log(
+        `stripe webhook: customer.subscription.deleted matched no user (customer=${String(obj.customer ?? "unknown")})`,
+      );
+      return;
+    }
+    await env.DB.prepare("UPDATE users SET plan = 'free', updated_at = ? WHERE id = ?")
+      .bind(now(), userId)
+      .run();
+    return;
+  }
+
   if (type === "checkout.session.completed" || type?.startsWith("customer.subscription")) {
     const userId = meta.user_id;
     const plan = meta.plan;
