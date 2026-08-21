@@ -24,6 +24,7 @@ export interface Env {
   SESSION_SECRET?: string;
   STRIPE_SECRET_KEY?: string;
   STRIPE_WEBHOOK_SECRET?: string;
+  FEDERATION_STRIPE_SECRET?: string; // shared secret for CROS hub → /api/stripe/federation-in forwarding
   LULU_CLIENT_KEY?: string;
   LULU_CLIENT_SECRET?: string;
   VAPID_PRIVATE_KEY?: string; // web-push private key

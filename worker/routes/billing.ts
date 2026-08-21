@@ -75,6 +75,41 @@ billing.post("/checkout", requireAuth, async (c) => {
   }
 });
 
+// Post-verification Stripe event handling, shared by the direct webhook below
+// and the CROS federation receiver (/api/stripe/federation-in). Both paths
+// verify their own signatures first, then dispatch here — one code path, so
+// the two entry points cannot drift.
+export async function handleStripeEvent(
+  event: Record<string, unknown>,
+  env: Env,
+  ctx: ExecutionContext,
+): Promise<void> {
+  const type = event.type as string;
+  const obj = (event.data as { object: Record<string, unknown> })?.object ?? {};
+  const meta = (obj.metadata as Record<string, string>) ?? {};
+
+  // One-time yearbook purchases → fulfill via Lulu.
+  if (type === "checkout.session.completed" && meta.type === "yearbook" && meta.order_id) {
+    await env.DB.prepare(
+      "UPDATE yearbook_orders SET stripe_session_id = ?, updated_at = ? WHERE id = ?",
+    )
+      .bind(obj.id as string, now(), meta.order_id)
+      .run();
+    ctx.waitUntil(fulfillYearbook(env, meta.order_id));
+    return;
+  }
+
+  if (type === "checkout.session.completed" || type?.startsWith("customer.subscription")) {
+    const userId = meta.user_id;
+    const plan = meta.plan;
+    if (userId && plan) {
+      await env.DB.prepare("UPDATE users SET plan = ?, updated_at = ? WHERE id = ?")
+        .bind(plan, now(), userId)
+        .run();
+    }
+  }
+}
+
 // Stripe webhook — keeps the subscriptions table + user plan in sync.
 // Signature is verified against STRIPE_WEBHOOK_SECRET; unverified events are
 // rejected (fail closed) so a forged POST cannot grant entitlements.
@@ -88,30 +123,7 @@ billing.post("/webhook", async (c) => {
     return c.json({ error: "webhook_verification_failed" }, status as 400);
   }
 
-  const type = event.type as string;
-  const obj = (event.data as { object: Record<string, unknown> })?.object ?? {};
-  const meta = (obj.metadata as Record<string, string>) ?? {};
-
-  // One-time yearbook purchases → fulfill via Lulu.
-  if (type === "checkout.session.completed" && meta.type === "yearbook" && meta.order_id) {
-    await c.env.DB.prepare(
-      "UPDATE yearbook_orders SET stripe_session_id = ?, updated_at = ? WHERE id = ?",
-    )
-      .bind(obj.id as string, now(), meta.order_id)
-      .run();
-    c.executionCtx.waitUntil(fulfillYearbook(c.env, meta.order_id));
-    return c.json({ received: true });
-  }
-
-  if (type === "checkout.session.completed" || type?.startsWith("customer.subscription")) {
-    const userId = meta.user_id;
-    const plan = meta.plan;
-    if (userId && plan) {
-      await c.env.DB.prepare("UPDATE users SET plan = ?, updated_at = ? WHERE id = ?")
-        .bind(plan, now(), userId)
-        .run();
-    }
-  }
+  await handleStripeEvent(event, c.env, c.executionCtx);
   return c.json({ received: true });
 });
 

@@ -8,6 +8,7 @@ import tracks from "./routes/tracks";
 import riders from "./routes/riders";
 import advocacy from "./routes/advocacy";
 import billing from "./routes/billing";
+import stripeRoutes from "./routes/stripe";
 import meta from "./routes/meta";
 import tower from "./routes/tower";
 import garage from "./routes/garage";
@@ -57,6 +58,7 @@ api.route("/tracks", tracks);
 api.route("/riders", riders);
 api.route("/advocacy", advocacy);
 api.route("/billing", billing);
+api.route("/stripe", stripeRoutes); // CROS hub federation receiver (/api/stripe/federation-in)
 api.route("/meta", meta);
 api.route("/tower", tower);
 api.route("/garage", garage);
